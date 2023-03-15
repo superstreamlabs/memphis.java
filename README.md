@@ -62,27 +62,19 @@ import com.memphis.Memphis;
 First, we need to create Memphis `object` and then connect with Memphis by using `Memphis.connect`.
 
 ```java
-try {
-    MemphisConnection memphisConnection = Memphis.connect(
-        "<memphis-host>",
-        "<application-type username>",
-        "<broker-token>",
-        "<port>", // defaults to 6666
-        true, // reconnect, defaults to true
-        3, // max_reconnect, defaults to 3
-        1500, // reconnect_interval_ms, defaults to 1500
-        1500, // timeout_ms, defaults to 1500
-        "<key-client.pem>", // key_file, for TLS connection
-        "<cert-client.pem>", // cert_file, for TLS connection
-        "<rootCA.pem>" // ca_file, for TLS connection
-    ).get(); // wait for the connection to complete
-
-    // do other things with the memphis object here
-
-    memphisConnection.close().get(); // wait for the connection to close
-} catch (Exception e) {
-    e.printStackTrace();
-}
+MemphisConnection memphisConnection = Memphis.connect(
+    "<memphis-host>",
+    "<application-type username>",
+    "<broker-token>",
+    "<port>", // defaults to 6666
+    true, // reconnect, defaults to true
+    3, // max_reconnect, defaults to 3
+    1500, // reconnect_interval_ms, defaults to 1500
+    1500, // timeout_ms, defaults to 1500
+    "<key-client.pem>", // key_file, for TLS connection
+    "<cert-client.pem>", // cert_file, for TLS connection
+    "<rootCA.pem>" // ca_file, for TLS connection
+).get(); // wait for the connection to complete
 ```
 
 Once connected, the entire functionalities offered by Memphis are available.
