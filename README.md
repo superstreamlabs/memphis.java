@@ -48,44 +48,40 @@ extreme cost reduction, and a significantly lower amount of dev time for data-or
 ## Installation
 
 ```sh
-$ pip3 install memphis-py
+$ gradle install memphis-dev
 ```
 
 ## Importing
 
 ```java
-import com.memphis.Headers;
 import com.memphis.Memphis;
 ```
 
 ### Connecting to Memphis
 
-First, we need to create Memphis `object` and then connect with Memphis by using `memphis.connect`.
+First, we need to create Memphis `object` and then connect with Memphis by using `Memphis.connect`.
 
 ```java
-public static void main(String[] args) {
-    try {
-        Memphis memphis = new Memphis();
-        memphis.connect(
-            "<memphis-host>",
-            "<application-type username>",
-            "<broker-token>",
-            "<port>", // defaults to 6666
-            true, // reconnect, defaults to true
-            3, // max_reconnect, defaults to 3
-            1500, // reconnect_interval_ms, defaults to 1500
-            1500, // timeout_ms, defaults to 1500
-            "<key-client.pem>", // key_file, for TLS connection
-            "<cert-client.pem>", // cert_file, for TLS connection
-            "<rootCA.pem>" // ca_file, for TLS connection
-        ).get(); // wait for the connection to complete
+try {
+    MemphisConnection memphisConnection = Memphis.connect(
+        "<memphis-host>",
+        "<application-type username>",
+        "<broker-token>",
+        "<port>", // defaults to 6666
+        true, // reconnect, defaults to true
+        3, // max_reconnect, defaults to 3
+        1500, // reconnect_interval_ms, defaults to 1500
+        1500, // timeout_ms, defaults to 1500
+        "<key-client.pem>", // key_file, for TLS connection
+        "<cert-client.pem>", // cert_file, for TLS connection
+        "<rootCA.pem>" // ca_file, for TLS connection
+    ).get(); // wait for the connection to complete
 
-        // do other things with the memphis object here
+    // do other things with the memphis object here
 
-        memphis.close().get(); // wait for the connection to close
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
+    memphisConnection.close().get(); // wait for the connection to close
+} catch (Exception e) {
+    e.printStackTrace();
 }
 ```
 
@@ -96,7 +92,7 @@ Once connected, the entire functionalities offered by Memphis are available.
 To disconnect from Memphis, call `close()` on the memphis object.
 
 ```java
-memphis.close().get();
+memphisConnection.close().get();
 ```
 
 ### Creating a Station
@@ -104,7 +100,7 @@ memphis.close().get();
 _If a station already exists nothing happens, the new configuration will not be applied_
 
 ```java
-Station station = memphis.createStation(
+Station station = memphisConnection.createStation(
     "<station-name>",
     "<schema-name>",
     Retention.MAX_MESSAGE_AGE_SECONDS, // MAX_MESSAGE_AGE_SECONDS/MESSAGES/BYTES. Defaults to MAX_MESSAGE_AGE_SECONDS
@@ -115,7 +111,7 @@ Station station = memphis.createStation(
     true, // defaults to true
     true, // defaults to true
     false // defaults to false
-);
+).get();
 ```
 
 ### Retention types
@@ -172,13 +168,13 @@ Means that messages persist on the main memory
 Destroying a station will remove all its resources (producers/consumers)
 
 ```java
-station.destroy()
+station.destroy().get()
 ```
 
 ### Attaching a Schema to an Existing Station
 
 ```java
-memphis.attachSchema("<schema-name>", "<station-name>").get();
+memphisConnection.attachSchema("<schema-name>", "<station-name>").get();
 
 
 ```
@@ -186,7 +182,7 @@ memphis.attachSchema("<schema-name>", "<station-name>").get();
 ### Detaching a Schema from Station
 
 ```java
-memphis.detachSchema("<station-name>").get()
+memphisConnection.detachSchema("<station-name>").get()
 ```
 
 
@@ -206,8 +202,7 @@ of whether there are messages in flight for the client.
 ### Creating a Producer
 
 ```java
-Memphis memphis = new Memphis();
-Prodcuer producer = memphis.createProducer("<station-name>", "<producer-name>", false).get();
+Prodcuer producer = memphisConnection.createProducer("<station-name>", "<producer-name>", false).get();
 ```
 
 ### Producing a message
@@ -215,10 +210,10 @@ Without creating a producer.
 In cases where extra performance is needed the recommended way is to create a producer first
 and produce messages by using the produce function of it
 ```java
-memphis.produce(
+memphisConnection.produce(
     "<station-name>", // station_name
     "<producer-name>", // producer_name
-    message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+    message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
     false, // generate_random_suffix - defaults to false
     15, // ack_wait_sec
     headers, // headers - default to {}
@@ -227,14 +222,21 @@ memphis.produce(
 ).get();
 ```
 
+with creating a producer
+```java
+producer.produce(
+  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  ack_wait_sec) // defaults to 15
+```
 ### Add headers
 
 ```java
 headers= new Headers()
 headers.add("key", "value")
 producer.produce(
-  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  headers=headers).get() // default to {}
+  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  headers) // default to {}
+  .get() 
 ```
 
 ### Async produce
@@ -242,7 +244,7 @@ Meaning your application won't wait for broker acknowledgement - use only in cas
 
 ```java
 producer.produce(
-  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
   headers={}, async_produce=True).get()
 ```
 
@@ -251,35 +253,34 @@ Stations are idempotent by default for 2 minutes (can be configured), Idempotenc
 
 ```java
 producer.produce((
-  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytes / protobuf class (schema validated station - protobuf) or bytes/dict (schema validated station - json schema)
-  headers={},
-  async_produce=True,
-  msg_id="123").get()
+  message, // bytes / protobuf class (schema validated station - protobuf) or bytes/dict (schema validated station - json schema)
+  headers, // defaulet {}
+  async_produce, //should be True to make async call
+  msg_id).get()
 ```
 
 ### Destroying a Producer
 
 ```java
-producer.destroy()
+producer.destroy().get()
 ```
 
 ### Creating a Consumer
 
 ```java
-Memphis memphis = new Memphis();
-Consumer consumer = memphis.createConsumer(
-          station_name="<station-name>",
-          consumer_name="<consumer-name>",
-          consumer_group="<group-name>",// defaults to the consumer name
-          pull_interval_ms=1000, // defaults to 1000
-          batch_size=10, // defaults to 10
-          batch_max_time_to_wait_ms=5000, // defaults to 5000
-          max_ack_time_ms=30000, // defaults to 30000
-          max_msg_deliveries=10, // defaults to 10
-          generate_random_suffix=False
-          start_consume_from_sequence=1 // start consuming from a specific sequence. defaults to 1
-          last_messages=-1 // consume the last N messages, defaults to -1 (all messages in the station)
-)
+Consumer consumer = memphisConnection.createConsumer(
+          "<station-name>",
+          "<consumer-name>",
+          "<group-name>",// defaults to the consumer name
+          pull_interval_ms, // defaults to 1000
+          batch_size, // defaults to 10
+          batch_max_time_to_wait_ms, // defaults to 5000
+          max_ack_time_ms, // defaults to 30000
+          max_msg_deliveries, // defaults to 10
+          generate_random_suffix,
+          start_consume_from_sequence, // start consuming from a specific sequence. defaults to 1
+          last_messages // consume the last N messages, defaults to -1 (all messages in the station)
+).get()
 ```
 
 ### Setting a context for message handler function
@@ -310,7 +311,7 @@ consumer.consume(this::msgHandler).get();
 
 ### Fetch a single batch of messages
 ```java
-messagesFuture = memphis.fetchMessages("<station-name>", "<consumer-name>", "<group-name>", 10, 5000, 30000, 10, false, 1, -1).get();
+messagesFuture = memphisConnection.fetchMessages("<station-name>", "<consumer-name>", "<group-name>", 10, 5000, 30000, 10, false, 1, -1).get();
 ```
 
 ### Fetch a single batch of messages after creating a consumer
@@ -344,12 +345,12 @@ msg.getSequenceNumber()
 ### Destroying a Consumer
 
 ```java
-consumer.destroy()
+consumer.destroy().get()
 ```
 
 
 ### Check connection status
 
 ```java
-memphis.isConnected()
+memphisConnection.isConnected()
 ```

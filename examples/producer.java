@@ -11,10 +11,9 @@ public class Main {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         try {
-            Memphis memphis = new Memphis();
-            memphis.connect("<memphis-host>", "<application type username>", "<broker-token>").get();
+            MemphisConnection memphisConnection = Memphis.connect("<memphis-host>", "<application type username>", "<broker-token>").get();
 
-            Producer producer = memphis.createProducer("<station-name>", "<producer-name>");
+            Producer producer = memphisConnection.createProducer("<station-name>", "<producer-name>").get();
 
             Headers headers = new Headers();
             headers.add("key", "value");
@@ -30,19 +29,8 @@ public class Main {
         } catch (MemphisConnectError | MemphisError | MemphisHeaderError | MemphisSchemaError | InterruptedException | ExecutionException e) {
             System.out.println(e.getMessage());
         } finally {
-            memphis.close().get();
+            memphisConnection.close().get();
         }
     }
 }
 
-
-/** CompletableFuture - As you can see, we using a get() in the end of some rows.
- * The reason is every object that have this get() method return 'CompletableFuture<Void>'.
- * This is a promise-like object that represents a computation that may not have completed yet,
- * but will eventually produce a result of type 'Void'.
- * When we call 'get()' on this 'CompletableFuture<Void>'', we are blocking the 
- * current thread and waiting for the function opreation to complete. 
- * The 'get()' method will return 'null' if the operation completes successfully,
- * or throw an exception if it fails.
- * 
- */
