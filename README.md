@@ -104,7 +104,7 @@ memphis.close().get();
 _If a station already exists nothing happens, the new configuration will not be applied_
 
 ```java
-Station station = memphis.station(
+Station station = memphis.createStation(
     "<station-name>",
     "<schema-name>",
     Retention.MAX_MESSAGE_AGE_SECONDS, // MAX_MESSAGE_AGE_SECONDS/MESSAGES/BYTES. Defaults to MAX_MESSAGE_AGE_SECONDS
@@ -145,9 +145,9 @@ Means that after max amount of saved bytes (set in retention value), the oldest 
 
 The `retention values` are directly related to the `retention types` mentioned above, where the values vary according to the type of retention chosen.
 
-All retention values are of type `int` but with different representations as follows:
+All retention values are of type `Integer` but with different representations as follows:
 
-`memphis.types.Retention.MAX_MESSAGE_AGE_SECONDS` is represented **in seconds**, `memphis.types.Retention.MESSAGES` in a **number of messages** and finally `memphis.types.Retention.BYTES` in a **number of bytes**.
+`RetentionTypes.MAX_MESSAGE_AGE_SECONDS` is represented **in seconds**, `RetentionTypes.MESSAGES` in a **number of messages** and finally `RetentionTypes.BYTES` in a **number of bytes**.
 
 After these limits are reached oldest messages will be deleted.
 
@@ -178,22 +178,15 @@ station.destroy()
 ### Attaching a Schema to an Existing Station
 
 ```java
-CompletableFuture<Void> attachSchemaFuture = memphis.attachSchema("<schema-name>", "<station-name>");
-attachSchemaFuture.thenAccept((result) -> {
-    System.out.println("Successfully attached schema");
-}).exceptionally((exception) -> {
-    System.out.println("Error attaching schema: " + exception.getMessage());
-    return null;
-});
-attachSchemaFuture.get(); // Wait for the result of the future
+memphis.attachSchema("<schema-name>", "<station-name>").get();
+
+
 ```
 
 ### Detaching a Schema from Station
 
 ```java
-CompletableFuture<Void> detachSchemaFuture = memphis.detachSchema("<station-name>");
-detachSchemaFuture.get(); // wait for the future to complete
-
+memphis.detachSchema("<station-name>").get()
 ```
 
 
@@ -213,22 +206,8 @@ of whether there are messages in flight for the client.
 ### Creating a Producer
 
 ```java
-// Assuming there is a Memphis object with a producer method
 Memphis memphis = new Memphis();
-// Create a CompletableFuture that will create the producer
-CompletableFuture<Producer> producerFuture = CompletableFuture.supplyAsync(() -> {
-    return memphis.createProducer("<station-name>", "<producer-name>", false);
-  } catch (Exception e) {
-      throw new RuntimeException(e);
-  }
-);
-// Wait for the consumer object to be retrieved and handle any exceptions
-Producer producer;
-try {
-    producer = producerFuture.get();
-} catch (Exception e) {
-    throw new RuntimeException(e);
-}
+Prodcuer producer = memphis.createProducer("<station-name>", "<producer-name>", false).get();
 ```
 
 ### Producing a message
@@ -236,7 +215,7 @@ Without creating a producer.
 In cases where extra performance is needed the recommended way is to create a producer first
 and produce messages by using the produce function of it
 ```java
-CompletableFuture<ProducerResult> producerResultFuture = memphis.produce(
+memphis.produce(
     "<station-name>", // station_name
     "<producer-name>", // producer_name
     message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
@@ -245,7 +224,7 @@ CompletableFuture<ProducerResult> producerResultFuture = memphis.produce(
     headers, // headers - default to {}
     false, // async_produce - defaults to false
     "123" // msg_id
-);
+).get();
 ```
 
 ### Add headers
@@ -253,43 +232,42 @@ CompletableFuture<ProducerResult> producerResultFuture = memphis.produce(
 ```java
 headers= new Headers()
 headers.add("key", "value")
-CompletableFuture<Void> future = producer.produce((
-  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', # bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  headers=headers) # default to {}
+producer.produce(
+  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  headers=headers).get() // default to {}
 ```
 
 ### Async produce
 Meaning your application won't wait for broker acknowledgement - use only in case you are tolerant for data loss
 
 ```java
-CompletableFuture<Void> future = producer.produce((
-  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', # bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  headers={}, async_produce=True)
+producer.produce(
+  message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  headers={}, async_produce=True).get()
 ```
 
 ### Message ID
 Stations are idempotent by default for 2 minutes (can be configured), Idempotency achieved by adding a message id
 
 ```java
-CompletableFuture<Void> future = producer.produce((
+producer.produce((
   message='bytearray/protobuf class/dict/string/graphql.language.ast.DocumentNode', // bytes / protobuf class (schema validated station - protobuf) or bytes/dict (schema validated station - json schema)
   headers={},
   async_produce=True,
-  msg_id="123")
+  msg_id="123").get()
 ```
 
 ### Destroying a Producer
 
-```python
+```java
 producer.destroy()
 ```
 
 ### Creating a Consumer
 
 ```java
-CompletableFuture<Consumer> consumerFuture = CompletableFuture.supplyAsync(() -> {
-  try {
-        return memphis.consumer(
+Memphis memphis = new Memphis();
+Consumer consumer = memphis.createConsumer(
           station_name="<station-name>",
           consumer_name="<consumer-name>",
           consumer_group="<group-name>",// defaults to the consumer name
@@ -301,16 +279,6 @@ CompletableFuture<Consumer> consumerFuture = CompletableFuture.supplyAsync(() ->
           generate_random_suffix=False
           start_consume_from_sequence=1 // start consuming from a specific sequence. defaults to 1
           last_messages=-1 // consume the last N messages, defaults to -1 (all messages in the station)
-  } catch (Exception e) {
-    throw new RuntimeException(e);
-  }
-
-Consumer consumer;
-try {
-    consumer = consumerFuture.get();
-} catch (Exception e) {
-    throw new RuntimeException(e);
-}
 )
 ```
 
@@ -327,9 +295,6 @@ consumer.setContext(context);
 Once all the messages in the station were consumed the msg_handler will receive error: `Memphis: TimeoutError`.
 
 ```java
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
 public void msgHandler(List<Message> msgs, Exception error, Object context) {
     for (Message msg : msgs) {
         System.out.println("message: " + msg.getData());
@@ -340,28 +305,12 @@ public void msgHandler(List<Message> msgs, Exception error, Object context) {
     }
 }
 
-CompletableFuture<Void> handlerFuture = CompletableFuture.runAsync(() -> {
-    consumer.consume(this::msgHandler);
-});
-
-handlerFuture.get(); // Wait for the handler to finish executing
-
+consumer.consume(this::msgHandler).get();
 ```
 
 ### Fetch a single batch of messages
 ```java
-CompletableFuture<List<Message>> messagesFuture = memphis.fetchMessages("<station-name>", "<consumer-name>", "<group-name>", 10, 5000, 30000, 10, false, 1, -1);
-
-messagesFuture.thenAccept(messages -> {
-    for (Message message : messages) {
-        System.out.println("Message: " + message.getData());
-        message.ack();
-    }
-}).exceptionally(error -> {
-    System.out.println("Error fetching messages: " + error);
-    return null;
-});
-
+messagesFuture = memphis.fetchMessages("<station-name>", "<consumer-name>", "<group-name>", 10, 5000, 30000, 10, false, 1, -1).get();
 ```
 
 ### Fetch a single batch of messages after creating a consumer
@@ -381,7 +330,7 @@ message.ack().get()
 ### Get headers 
 Get headers per message
 
-``java
+```java
 message.getHeaders()
 ```
 
@@ -395,7 +344,7 @@ msg.getSequenceNumber()
 ### Destroying a Consumer
 
 ```java
-consumer.Destroy()
+consumer.destroy()
 ```
 
 

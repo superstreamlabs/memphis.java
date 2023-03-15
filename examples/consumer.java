@@ -14,7 +14,7 @@ public class Main {
             Memphis memphis = new Memphis();
             memphis.connect("<memphis-host>", "<application type username>", "<broker-token>").get();
 
-            Consumer consumer = memphis.consumer("<station-name>", "<consumer-name>", "");
+            Consumer consumer = memphis.createConsumer("<station-name>", "<consumer-name>", "");
             consumer.setContext("key", "value");
 
             consumer.consume((msgs, error, context) -> {

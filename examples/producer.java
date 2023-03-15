@@ -14,7 +14,7 @@ public class Main {
             Memphis memphis = new Memphis();
             memphis.connect("<memphis-host>", "<application type username>", "<broker-token>").get();
 
-            Producer producer = memphis.producer("<station-name>", "<producer-name>");
+            Producer producer = memphis.createProducer("<station-name>", "<producer-name>");
 
             Headers headers = new Headers();
             headers.add("key", "value");
@@ -45,7 +45,4 @@ public class Main {
  * The 'get()' method will return 'null' if the operation completes successfully,
  * or throw an exception if it fails.
  * 
- * CountDownLatch - we using the CountDownLatch method to make the program run always. 
- * with this method we can put the number 1 and in other uses we can use this variable 
- * to decrease the counter to zero by the .countDown() method
  */
