@@ -65,7 +65,7 @@ First, we need to create Memphis `object` and then connect with Memphis by using
 MemphisConnection memphisConnection = Memphis.connect(
     "<memphis-host>",
     "<application-type username>",
-    "<broker-token>",
+    "<broker-token>", // you will get it on application type user creation
     "<port>", // defaults to 6666
     true, // reconnect, defaults to true
     3, // max_reconnect, defaults to 3
