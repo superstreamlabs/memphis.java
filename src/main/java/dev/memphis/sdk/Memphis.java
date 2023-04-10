@@ -50,7 +50,6 @@ public class Memphis {
 		}
 
 		Options natsConnOptions = natsConnOptsBuilder.build();
-		Connection natsConnection = Nats.connect(natsConnOptions);
 
 		try {
 			Connection brokerConnection = Nats.connect(natsConnOptions);

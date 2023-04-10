@@ -66,14 +66,14 @@ ClientOptions opts = new ClientOptions.Builder()
     .host("<memphis-host>")
     .username("<application-username>")
     .token("<broker-token>")
-    .port("<port>")
-    .reconnect(true)
-    .maxReconnect(3)
-    .reconnectInterval(1500)
-    .timeOut(1500)
-    .keyFile("<key-client.pem>")
-    .certFile("<cert-client.pem>")
-    .caFile("<rootCA.pem>")
+    .port("<port>")		// defaults to 6666
+    .reconnect(true)	// defaults to true
+    .maxReconnect(3)	// defaults to 3
+    .reconnectInterval(1500)	// defaults to 1500 ms
+    .timeOut(1500)		// defaults to 1500 ms
+    .keyFile("<key-client.pem>")	// key_file, for TLS connection
+    .certFile("<cert-client.pem>")	// cert_file, for TLS connection
+    .caFile("<rootCA.pem>")		// ca_file, for TLS connection
     .build();
 
 MemphisConnection memphisConnection = Memphis.connect(opts).get();
