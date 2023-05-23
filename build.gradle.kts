@@ -14,6 +14,8 @@ repositories {
 dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.9.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.9.0")
+	implementation("io.nats:jnats:2.16.9")
+	implementation("io.github.hakky54:sslcontext-kickstart-for-pem:7.4.0")
 }
 
 configure<JavaPluginExtension> {

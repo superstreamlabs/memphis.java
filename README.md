@@ -1,13 +1,13 @@
 <div align="center">
-  
+
   ![Memphis light logo](https://github.com/memphisdev/memphis-broker/blob/master/logo-white.png?raw=true#gh-dark-mode-only)
-  
+
 </div>
 
 <div align="center">
-  
+
   ![Memphis light logo](https://github.com/memphisdev/memphis-broker/blob/master/logo-black.png?raw=true#gh-light-mode-only)
-  
+
 </div>
 
 <div align="center">
@@ -15,17 +15,17 @@
 
 <img width="750" alt="Memphis UI" src="https://user-images.githubusercontent.com/70286779/204081372-186aae7b-a387-4253-83d1-b07dff69b3d0.png"><br>
 
-  
+
   <a href="https://landscape.cncf.io/?selected=memphis"><img width="200" alt="CNCF Silver Member" src="https://github.com/cncf/artwork/raw/master/other/cncf-member/silver/white/cncf-member-silver-white.svg#gh-dark-mode-only"></a>
-  
+
 </div>
 
 <div align="center">
-  
+
   <img width="200" alt="CNCF Silver Member" src="https://github.com/cncf/artwork/raw/master/other/cncf-member/silver/color/cncf-member-silver-color.svg#gh-light-mode-only">
-  
+
 </div>
- 
+
  <p align="center">
   <a href="https://sandbox.memphis.dev/" target="_blank">Sandbox</a> - <a href="https://memphis.dev/docs/">Docs</a> - <a href="https://twitter.com/Memphis_Dev">Twitter</a> - <a href="https://www.youtube.com/channel/UCVdMDLCSxXOqtgrBaRUHKKg">YouTube</a>
 </p>
@@ -62,19 +62,21 @@ import com.memphis.Memphis;
 First, we need to create Memphis `object` and then connect with Memphis by using `Memphis.connect`.
 
 ```java
-MemphisConnection memphisConnection = Memphis.connect(
-    "<memphis-host>",
-    "<application-type username>",
-    "<broker-token>", // you will get it on application type user creation
-    "<port>", // defaults to 6666
-    true, // reconnect, defaults to true
-    3, // max_reconnect, defaults to 3
-    1500, // reconnect_interval_ms, defaults to 1500
-    1500, // timeout_ms, defaults to 1500
-    "<key-client.pem>", // key_file, for TLS connection
-    "<cert-client.pem>", // cert_file, for TLS connection
-    "<rootCA.pem>" // ca_file, for TLS connection
-).get(); // wait for the connection to complete
+ClientOptions opts = new ClientOptions.Builder()
+    .host("<memphis-host>")
+    .username("<application-username>")
+    .token("<broker-token>")
+    .port("<port>")		// defaults to 6666
+    .reconnect(true)	// defaults to true
+    .maxReconnect(3)	// defaults to 3
+    .reconnectInterval(1500)	// defaults to 1500 ms
+    .timeOut(1500)		// defaults to 1500 ms
+    .keyFile("<key-client.pem>")	// key_file, for TLS connection
+    .certFile("<cert-client.pem>")	// cert_file, for TLS connection
+    .caFile("<rootCA.pem>")		// ca_file, for TLS connection
+    .build();
+
+MemphisConnection memphisConnection = Memphis.connect(opts).get();
 ```
 
 Once connected, the entire functionalities offered by Memphis are available.
