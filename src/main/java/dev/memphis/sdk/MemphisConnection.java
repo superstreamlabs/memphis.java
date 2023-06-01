@@ -12,11 +12,13 @@ import nl.altindag.ssl.util.PemUtils;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
-import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
 public class MemphisConnection {
+
+    private final Connection brokerConnection;
+    private final JetStream jetStreamContext;
 
     MemphisConnection(ClientOptions opts) throws MemphisConnectException {
         UUID uuid = UUID.randomUUID();
@@ -24,32 +26,42 @@ public class MemphisConnection {
         Options.Builder natsConnOptsBuilder = new Options.Builder()
                 .server(opts.host + ":" + opts.port)
                 .connectionName(uuid + "::" + opts.username)
-                .token(opts.broker_token.toCharArray())
-                .maxReconnects(opts.reconnect ? opts.max_reconnect : 0)
-                .reconnectWait(Duration.ofDays(opts.reconnect_interval_ms))
-                .connectionTimeout(Duration.ofDays(opts.timeout_ms));
+                .maxReconnects(opts.reconnect ? opts.maxReconnects : 0)
+                .reconnectWait(opts.reconnectInterval)
+                .connectionTimeout(opts.timeout);
+
+        if(opts.authenticationMethod instanceof ClientOptions.Password) {
+            natsConnOptsBuilder = natsConnOptsBuilder.userInfo(opts.username, opts.authenticationMethod.getString());
+        } else if(opts.authenticationMethod instanceof ClientOptions.ConnectionToken) {
+            natsConnOptsBuilder = natsConnOptsBuilder.token(opts.authenticationMethod.getString());
+        }
 
         //Third party library approach, allows using pem files
-        X509ExtendedKeyManager keyManager = PemUtils.loadIdentityMaterial(opts.cert_file, opts.key_file);
-        X509ExtendedTrustManager trustManager = PemUtils.loadTrustMaterial(opts.ca_file);
+        if(opts.sslConfiguration != null) {
+            X509ExtendedKeyManager keyManager = PemUtils.loadIdentityMaterial(opts.sslConfiguration.getCertFile(),
+                    opts.sslConfiguration.getKeyFile());
+            X509ExtendedTrustManager trustManager = PemUtils.loadTrustMaterial(opts.sslConfiguration.getCaFile());
 
-        SSLFactory sslFactory = SSLFactory.builder()
-                .withIdentityMaterial(keyManager)
-                .withTrustMaterial(trustManager)
-                .build();
-        SSLContext ssl_ctx = sslFactory.getSslContext();
-        natsConnOptsBuilder = natsConnOptsBuilder.sslContext(ssl_ctx);
+            SSLFactory sslFactory = SSLFactory.builder()
+                    .withIdentityMaterial(keyManager)
+                    .withTrustMaterial(trustManager)
+                    .build();
+            SSLContext ssl_ctx = sslFactory.getSslContext();
+            natsConnOptsBuilder = natsConnOptsBuilder.sslContext(ssl_ctx);
+        }
 
         Options natsConnOptions = natsConnOptsBuilder.build();
 
         try {
-            Connection brokerConnection = Nats.connect(natsConnOptions);
-            JetStream jetStreamContext = brokerConnection.jetStream();
+            this.brokerConnection = Nats.connect(natsConnOptions);
+            this.jetStreamContext = this.brokerConnection.jetStream();
         } catch (Exception e) {
             throw new MemphisConnectException("Error occurred while connecting to Memphis");
         }
+    }
 
-        //Todo: return Memphis
+    public void close() throws InterruptedException {
+        this.brokerConnection.close();
     }
 
     public boolean isConnected() {
