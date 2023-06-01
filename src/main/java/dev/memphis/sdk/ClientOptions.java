@@ -1,44 +1,109 @@
 package dev.memphis.sdk;
 
+import java.time.Duration;
+
 public class ClientOptions {
     final String host;
     final String username;
-    final String broker_token;
+    final AuthenticationMethod authenticationMethod;
     final int port;
     final boolean reconnect;
-    final int max_reconnect;
-    final int reconnect_interval_ms;
-    final int timeout_ms;
-    final String key_file;
-    final String cert_file;
-    final String ca_file;
+    final int maxReconnects;
+    final Duration reconnectInterval;
+    final Duration timeout;
+    final SSLConfiguration sslConfiguration;
 
     private ClientOptions(Builder b) {
         this.host = b.host;
         this.username = b.username;
-        this.broker_token = b.broker_token;
+        this.authenticationMethod = b.authenticationMethod;
         this.port = b.port;
         this.reconnect = b.reconnect;
-        this.max_reconnect = b.max_reconnect;
-        this.reconnect_interval_ms = b.reconnect_interval_ms;
-        this.timeout_ms = b.timeout_ms;
-        this.key_file = b.key_file;
-        this.cert_file = b.cert_file;
-        this.ca_file = b.ca_file;
+        this.maxReconnects = b.maxReconnects;
+        this.reconnectInterval = b.reconnectInterval;
+        this.timeout = b.timeout;
+        this.sslConfiguration = b.sslConfiguration;
+    }
+
+    /**
+     * Allows modeling of mutually-exclusive authentication methods
+     * in a type-safe way.
+     */
+    public static class AuthenticationMethod {
+        private final String s;
+        protected AuthenticationMethod(String s) {
+            this.s = s;
+        }
+
+        public String getString() {
+            return s;
+        }
+
+        public static AuthenticationMethod fromPassword(String password) {
+            return new Password(password);
+        }
+
+        public static AuthenticationMethod fromConnectionToken(String token) {
+            return new ConnectionToken(token);
+        }
+    }
+
+    public static class Password extends AuthenticationMethod {
+        public Password(String password) {
+            super(password);
+        }
+    }
+
+    public static class ConnectionToken extends AuthenticationMethod {
+        public ConnectionToken(String connectionToken) {
+            super(connectionToken);
+        }
+    }
+
+    /**
+     * Bundles the TLS key, certificate, and certificate authority file paths
+     * for type safety.
+     */
+    public static class SSLConfiguration {
+        final private String keyFile;
+        final private String certFile;
+        final private String caFile;
+
+        /**
+         *
+         * @param keyFile TLS key file path
+         * @param certFile TLS certificate file path
+         * @param caFile TLS ca file path
+         */
+        public SSLConfiguration(String keyFile, String certFile, String caFile) {
+            this.keyFile = keyFile;
+            this.certFile = certFile;
+            this.caFile = caFile;
+        }
+
+        public String getKeyFile() {
+            return keyFile;
+        }
+
+        public String getCertFile() {
+            return certFile;
+        }
+
+        public String getCaFile() {
+            return caFile;
+        }
     }
 
     public static class Builder {
         private String host;
         private String username;
-        private String broker_token;
+        private AuthenticationMethod authenticationMethod;
+        private SSLConfiguration sslConfiguration;
         private int port = 6666;
         private boolean reconnect = true;
-        private int max_reconnect = 3;
-        private int reconnect_interval_ms = 1500;
-        private int timeout_ms = 1500;
-        private String key_file = "";
-        private String cert_file = "";
-        private String ca_file = "";
+        private int maxReconnects = 3;
+        private Duration reconnectInterval = Duration.ofMillis(1500);
+        private Duration timeout = Duration.ofMillis(1500);
 
         /***
          *
@@ -46,13 +111,18 @@ public class ClientOptions {
          * @throws MemphisConnectException if either TLS key file, TLS certificate file or TLS ca file is missing
          */
         public ClientOptions build() throws MemphisConnectException {
-            if(!key_file.equals("") || !cert_file.equals("")) {
-                if(key_file.equals(""))
-                    throw new MemphisConnectException("Must provide a TLS key file");
-                if(cert_file.equals(""))
-                    throw new MemphisConnectException("Must provide a TLS cert file");
-                if(ca_file.equals(""))
-                    throw new MemphisConnectException("Must provide a TLS ca file");
+            if(authenticationMethod == null) {
+                throw new MemphisConnectException("Must provide a password or connection token.");
+            } else if(!(authenticationMethod instanceof Password) && !(authenticationMethod instanceof ConnectionToken)) {
+                throw new MemphisConnectException("Unsupported authentication type.");
+            }
+
+            if(host == null) {
+                throw new MemphisConnectException("Must provide a host");
+            }
+
+            if(username == null) {
+                throw new MemphisConnectException("Must provide a username");
             }
 
             return new ClientOptions(this);
@@ -80,11 +150,21 @@ public class ClientOptions {
 
         /***
          *
-         * @param broker_token connection token, obtained at the time of application type user creation
+         * @param password is a password associated with the given user
          * @return the Builder object for chaining purpose
          */
-        public Builder token(String broker_token) {
-            this.broker_token = broker_token;
+        public Builder password(String password) {
+            this.authenticationMethod = AuthenticationMethod.fromPassword(password);
+            return this;
+        }
+
+        /***
+         *
+         * @param token is a connection token associated with the given user
+         * @return the Builder object for chaining purpose
+         */
+        public Builder connectionToken(String token) {
+            this.authenticationMethod = AuthenticationMethod.fromConnectionToken(token);
             return this;
         }
 
@@ -114,58 +194,37 @@ public class ClientOptions {
          * @return the Builder object for chaining purpose
          */
         public Builder maxReconnect(int max_reconnect) {
-            this.max_reconnect = max_reconnect;
+            this.maxReconnects = max_reconnect;
             return this;
         }
 
         /***
          *
-         * @param reconnect_interval duration in milliseconds between reconnection attempts, defaults to 1500 ms
+         * @param reconnectInterval duration between reconnection attempts, defaults to 1500 ms
          * @return the Builder object for chaining purpose
          */
-        public Builder reconnectInterval(int reconnect_interval) {
-            this.reconnect_interval_ms = reconnect_interval;
+        public Builder reconnectInterval(Duration reconnectInterval) {
+            this.reconnectInterval = reconnectInterval;
             return this;
         }
 
         /***
          *
-         * @param timeout connection timeout duration in milliseconds, defaults to 1500 ms
+         * @param timeout connection timeout duration, defaults to 1500 ms
          * @return the Builder object for chaining purpose
          */
-        public Builder timeout(int timeout) {
-            this.timeout_ms = timeout;
+        public Builder timeout(Duration timeout) {
+            this.timeout = timeout;
             return this;
         }
 
         /***
          *
-         * @param key_file TLS key file path
+         * @param sslConfiguration SSLConfiguration object
          * @return the Builder object for chaining purpose
          */
-        public Builder keyFile(String key_file) {
-            this.key_file = key_file;
-            return this;
-        }
-
-
-        /***
-         *
-         * @param cert_file TLS certificate file path
-         * @return the Builder object for chaining purpose
-         */
-        public Builder certFile(String cert_file) {
-            this.cert_file = cert_file;
-            return this;
-        }
-
-        /***
-         *
-         * @param ca_file TLS ca file path
-         * @return the Builder object for chaining purpose
-         */
-        public Builder caFile(String ca_file) {
-            this.ca_file = ca_file;
+        public Builder SSLConfiguration(SSLConfiguration sslConfiguration) {
+            this.sslConfiguration = sslConfiguration;
             return this;
         }
     }
