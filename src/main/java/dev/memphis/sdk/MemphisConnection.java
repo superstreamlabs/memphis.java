@@ -1,8 +1,6 @@
 package dev.memphis.sdk;
 
 import dev.memphis.sdk.consumer.Consumer;
-import dev.memphis.sdk.consumer.MemphisCallbackFunction;
-import dev.memphis.sdk.consumer.MemphisConsumer;
 import dev.memphis.sdk.producer.Producer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
