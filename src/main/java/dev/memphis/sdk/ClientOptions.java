@@ -3,15 +3,18 @@ package dev.memphis.sdk;
 import java.time.Duration;
 
 public class ClientOptions {
-    final String host;
-    final String username;
-    final AuthenticationMethod authenticationMethod;
-    final int port;
-    final boolean reconnect;
-    final int maxReconnects;
-    final Duration reconnectInterval;
-    final Duration timeout;
-    final SSLConfiguration sslConfiguration;
+    public final String host;
+    public final String username;
+    public final AuthenticationMethod authenticationMethod;
+    public final int port;
+    public final boolean reconnect;
+    public final int maxReconnects;
+    public final Duration reconnectInterval;
+    public final Duration timeout;
+    public final SSLConfiguration sslConfiguration;
+    public final Duration maxWaitTime;
+    public final int batchSize;
+    public final Duration pullInterval;
 
     private ClientOptions(Builder b) {
         this.host = b.host;
@@ -23,6 +26,9 @@ public class ClientOptions {
         this.reconnectInterval = b.reconnectInterval;
         this.timeout = b.timeout;
         this.sslConfiguration = b.sslConfiguration;
+        this.maxWaitTime = b.maxWaitTime;
+        this.batchSize = b.batchSize;
+        this.pullInterval = b.pullInterval;
     }
 
     /**
@@ -104,6 +110,9 @@ public class ClientOptions {
         private int maxReconnects = 3;
         private Duration reconnectInterval = Duration.ofMillis(1500);
         private Duration timeout = Duration.ofMillis(1500);
+        private Duration maxWaitTime = Duration.ofMillis(5000);
+        private int batchSize = 10;
+        private Duration pullInterval = Duration.ofMillis(1000);
 
         /***
          *
@@ -225,6 +234,36 @@ public class ClientOptions {
          */
         public Builder SSLConfiguration(SSLConfiguration sslConfiguration) {
             this.sslConfiguration = sslConfiguration;
+            return this;
+        }
+
+        /***
+         *
+         * @param maxWaitTime amount of time to wait when polling the broker
+         * @return the Builder object for chaining purpose
+         */
+        public Builder maxWaitTime(Duration maxWaitTime) {
+            this.maxWaitTime = maxWaitTime;
+            return this;
+        }
+
+        /***
+         *
+         * @param pullInterval amount of time to wait in between polling the broker
+         * @return the Builder object for chaining purpose
+         */
+        public Builder pullInterval(Duration pullInterval) {
+            this.pullInterval = pullInterval;
+            return this;
+        }
+
+        /***
+         *
+         * @param batchSize maximum number of messages to grab from the broker per batch
+         * @return the Builder object for chaining purpose
+         */
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
             return this;
         }
     }
