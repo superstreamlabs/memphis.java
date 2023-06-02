@@ -259,6 +259,7 @@ public class ClientOptions {
 
         /***
          *
+
          * @param batchSize maximum number of messages to grab from the broker per batch
          * @return the Builder object for chaining purpose
          */
