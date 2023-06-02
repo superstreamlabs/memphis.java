@@ -1,6 +1,7 @@
 package dev.memphis.sdk;
 
-import dev.memphis.sdk.consumer.Consumer;
+import dev.memphis.sdk.consumer.MemphisCallbackFunction;
+import dev.memphis.sdk.consumer.MemphisConsumer;
 import dev.memphis.sdk.producer.Producer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -19,8 +20,11 @@ public class MemphisConnection {
 
     private final Connection brokerConnection;
     private final JetStream jetStreamContext;
+    private final ClientOptions opts;
 
     MemphisConnection(ClientOptions opts) throws MemphisConnectException {
+        this.opts = opts;
+
         UUID uuid = UUID.randomUUID();
 
         Options.Builder natsConnOptsBuilder = new Options.Builder()
@@ -76,8 +80,17 @@ public class MemphisConnection {
         return null;
     }
 
-    public Future<Consumer> createConsumer() {
-        return null;
+    /**
+     * Creates a consumer that consumes messages over this connection.
+     * The consumer implements the Runnable interface so that it can be
+     * executed in a separate thread, if desired.
+     * @param stationName name of the Memphis station
+     * @param consumerGroup name of the consumer group
+     * @param callbackFunction callback function that is called on each batch of messages
+     * @return an instance of MemphisConsumer
+     */
+    public MemphisConsumer createConsumer(String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction) {
+        return new MemphisConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
     }
 
     public String createUniqueProducerSuffix() {
