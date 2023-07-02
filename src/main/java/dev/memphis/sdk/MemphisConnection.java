@@ -2,7 +2,7 @@ package dev.memphis.sdk;
 
 import dev.memphis.sdk.consumer.MemphisCallbackFunction;
 import dev.memphis.sdk.consumer.MemphisConsumer;
-import dev.memphis.sdk.producer.Producer;
+import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
 import io.nats.client.Nats;
@@ -21,15 +21,17 @@ public class MemphisConnection {
     private final Connection brokerConnection;
     private final JetStream jetStreamContext;
     private final ClientOptions opts;
+    private final String connectionId;
 
     MemphisConnection(ClientOptions opts) throws MemphisConnectException {
         this.opts = opts;
 
         UUID uuid = UUID.randomUUID();
+        connectionId = uuid + "::" + opts.username;
 
         Options.Builder natsConnOptsBuilder = new Options.Builder()
                 .server(opts.host + ":" + opts.port)
-                .connectionName(uuid + "::" + opts.username)
+                .connectionName(connectionId)
                 .maxReconnects(opts.reconnect ? opts.maxReconnects : 0)
                 .reconnectWait(opts.reconnectInterval)
                 .connectionTimeout(opts.timeout);
@@ -60,7 +62,7 @@ public class MemphisConnection {
             this.brokerConnection = Nats.connect(natsConnOptions);
             this.jetStreamContext = this.brokerConnection.jetStream();
         } catch (Exception e) {
-            throw new MemphisConnectException("Error occurred while connecting to Memphis");
+            throw new MemphisConnectException("Error occurred while connecting to Memphis: " + e.getMessage());
         }
     }
 
@@ -76,8 +78,8 @@ public class MemphisConnection {
         return null;
     }
 
-    public Future<Producer> createProducer() {
-        return null;
+    public MemphisProducer createProducer(String stationName, String producerName) {
+        return new MemphisProducer(jetStreamContext, stationName, producerName, connectionId);
     }
 
     /**
