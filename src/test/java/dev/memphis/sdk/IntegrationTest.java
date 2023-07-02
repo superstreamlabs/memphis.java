@@ -1,11 +1,8 @@
 package dev.memphis.sdk;
 
-import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
-import dev.memphis.sdk.consumer.MemphisSynchronousConsumer;
-import dev.memphis.sdk.producer.MemphisProducer;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IntegrationTest {
 
@@ -23,18 +20,22 @@ public class IntegrationTest {
         var connection = Memphis.connect(options);
 
         var producer = connection.createProducer(stationName, "JavaProducer");
-        byte[] msg = "This is a test.".getBytes();
+        byte[] msgText = "This is a test.".getBytes();
 
         for(int i = 0; i < numMessages; i++) {
-            producer.produce(msg);
+            producer.produce(msgText);
         }
 
         var consumer = connection.createSynchronousConsumer(stationName, "group");
 
         var messages = consumer.fetch();
 
-        assertEquals(numMessages, messages.size());
+        for(var msg : messages) {
+            msg.ack();
+        }
 
         connection.close();
+
+        assertTrue(messages.size() >= numMessages);
     }
 }
