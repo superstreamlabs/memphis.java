@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MemphisConsumer implements Runnable {
+public class MemphisCallbackConsumer implements Runnable {
     private static final String STATION_SUFFIX = ".final";
 
     private final String stationName;
@@ -24,7 +24,7 @@ public class MemphisConsumer implements Runnable {
     private final int batchSize;
     private final Duration pullInterval;
 
-    public MemphisConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction, ClientOptions opts) {
+    public MemphisCallbackConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction, ClientOptions opts) {
         this.stationName = stationName;
         this.consumerGroup = consumerGroup;
         this.jetStreamContext = jetStreamContext;
