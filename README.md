@@ -76,7 +76,7 @@ ClientOptions opts = new ClientOptions.Builder()
     .caFile("<rootCA.pem>")		// ca_file, for TLS connection
     .build();
 
-MemphisConnection memphisConnection = Memphis.connect(opts).get();
+MemphisConnection memphisConnection = Memphis.connect(opts);
 ```
 
 Once connected, the entire functionalities offered by Memphis are available.
@@ -86,7 +86,7 @@ Once connected, the entire functionalities offered by Memphis are available.
 To disconnect from Memphis, call `close()` on the memphis object.
 
 ```java
-memphisConnection.close().get();
+memphisConnection.close();
 ```
 
 ### Creating a Station
@@ -176,7 +176,7 @@ memphisConnection.attachSchema("<schema-name>", "<station-name>").get();
 ### Detaching a Schema from Station
 
 ```java
-memphisConnection.detachSchema("<station-name>").get()
+memphisConnection.detachSchema("<station-name>").get();
 ```
 
 
@@ -196,7 +196,7 @@ of whether there are messages in flight for the client.
 ### Creating a Producer
 
 ```java
-Prodcuer producer = memphisConnection.createProducer("<station-name>", "<producer-name>", false).get();
+MemphisProdcuer producer = memphisConnection.createProducer("<station-name>", "<producer-name>");
 ```
 
 ### Producing a message
@@ -219,44 +219,14 @@ memphisConnection.produce(
 with creating a producer
 ```java
 producer.produce(
-  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  ack_wait_sec) // defaults to 15
-```
-### Add headers
-
-```java
-headers= new Headers()
-headers.add("key", "value")
-producer.produce(
-  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  headers) // default to {}
-  .get() 
-```
-
-### Async produce
-Meaning your application won't wait for broker acknowledgement - use only in case you are tolerant for data loss
-
-```java
-producer.produce(
-  message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  headers={}, async_produce=True).get()
-```
-
-### Message ID
-Stations are idempotent by default for 2 minutes (can be configured), Idempotency achieved by adding a message id
-
-```java
-producer.produce((
-  message, // bytes / protobuf class (schema validated station - protobuf) or bytes/dict (schema validated station - json schema)
-  headers, // defaulet {}
-  async_produce, //should be True to make async call
-  msg_id).get()
+  message // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
+  );
 ```
 
 ### Destroying a Producer
 
 ```java
-producer.destroy().get()
+producer.destroy();
 ```
 
 ### Creating a Consumer
@@ -274,7 +244,7 @@ Consumer consumer = memphisConnection.createConsumer(
           generate_random_suffix,
           start_consume_from_sequence, // start consuming from a specific sequence. defaults to 1
           last_messages // consume the last N messages, defaults to -1 (all messages in the station)
-).get()
+);
 ```
 
 ### Setting a context for message handler function
@@ -300,7 +270,7 @@ public void msgHandler(List<Message> msgs, Exception error, Object context) {
     }
 }
 
-consumer.consume(this::msgHandler).get();
+consumer.consume(this::msgHandler);
 ```
 
 ### Fetch a single batch of messages
@@ -319,32 +289,32 @@ List<Message> msgs = consumer.fetch(10); // fetches 10 messages from the station
 Acknowledge a message indicates the Memphis server to not re-send the same message again to the same consumer / consumers group
 
 ```java
-message.ack().get()
+message.ack();
 ```
 
 ### Get headers 
 Get headers per message
 
 ```java
-message.getHeaders()
+message.getHeaders();
 ```
 
 ### Get message sequence number
 Get message sequence number
 
 ```java
-msg.getSequenceNumber()
+msg.getSequenceNumber();
 ```
 
 ### Destroying a Consumer
 
 ```java
-consumer.destroy().get()
+consumer.destroy().get();
 ```
 
 
 ### Check connection status
 
 ```java
-memphisConnection.isConnected()
+memphisConnection.isConnected();
 ```
