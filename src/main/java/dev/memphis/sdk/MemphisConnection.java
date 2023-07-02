@@ -1,7 +1,8 @@
 package dev.memphis.sdk;
 
 import dev.memphis.sdk.consumer.MemphisCallbackFunction;
-import dev.memphis.sdk.consumer.MemphisConsumer;
+import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
+import dev.memphis.sdk.consumer.MemphisSynchronousConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -84,15 +85,29 @@ public class MemphisConnection {
 
     /**
      * Creates a consumer that consumes messages over this connection.
+     * The consumer takes a callback function used to process the messages.
      * The consumer implements the Runnable interface so that it can be
      * executed in a separate thread, if desired.
      * @param stationName name of the Memphis station
      * @param consumerGroup name of the consumer group
      * @param callbackFunction callback function that is called on each batch of messages
-     * @return an instance of MemphisConsumer
+     * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisConsumer createConsumer(String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction) {
-        return new MemphisConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
+    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction) {
+        return new MemphisCallbackConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
+    }
+
+    /**
+     * Creates a consumer that consumes messages over this connection.
+     * The consumer returns a list of messages when fetch() is called.
+     * The consumer implements the Runnable interface so that it can be
+     * executed in a separate thread, if desired.
+     * @param stationName name of the Memphis station
+     * @param consumerGroup name of the consumer group
+     * @return an instance of MemphisSynchronousConsumer
+     */
+    public MemphisSynchronousConsumer createSynchronousConsumer(String stationName, String consumerGroup) {
+        return new MemphisSynchronousConsumer(jetStreamContext, stationName, consumerGroup, opts);
     }
 
     public String createUniqueProducerSuffix() {
