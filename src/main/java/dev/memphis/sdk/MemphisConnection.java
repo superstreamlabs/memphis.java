@@ -67,8 +67,14 @@ public class MemphisConnection {
         }
     }
 
+    /**
+     * Closes the connection if connected
+     * @throws InterruptedException
+     */
     public void close() throws InterruptedException {
-        this.brokerConnection.close();
+        if(isConnected()) {
+            brokerConnection.close();
+        }
     }
 
     /**
@@ -108,14 +114,6 @@ public class MemphisConnection {
      */
     public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) {
         return new MemphisBatchConsumer(jetStreamContext, stationName, consumerGroup, opts);
-    }
-
-    public String createUniqueProducerSuffix() {
-        return null;
-    }
-
-    public String createUniqueConsumerSuffix() {
-        return null;
     }
 
     public Future<Station> createStation() {
