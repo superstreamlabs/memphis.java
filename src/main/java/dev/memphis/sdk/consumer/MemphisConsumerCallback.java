@@ -5,6 +5,6 @@ import dev.memphis.sdk.MemphisMessage;
 import java.util.List;
 
 @FunctionalInterface
-public interface MemphisCallbackFunction {
+public interface MemphisConsumerCallback {
     void accept(List<MemphisMessage> messages);
 }

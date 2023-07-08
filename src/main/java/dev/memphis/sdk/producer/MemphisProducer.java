@@ -1,10 +1,14 @@
 package dev.memphis.sdk.producer;
 
+import dev.memphis.sdk.MemphisConnectException;
 import dev.memphis.sdk.MemphisException;
+import io.nats.client.Connection;
 import io.nats.client.JetStream;
 import io.nats.client.api.PublishAck;
 import io.nats.client.impl.Headers;
 import io.nats.client.impl.NatsMessage;
+
+import java.io.IOException;
 
 /**
  * A simple synchronous producer.
@@ -18,11 +22,15 @@ public class MemphisProducer {
     private final String connectionId;
     private final String producerName;
 
-    public MemphisProducer(JetStream jetStreamContext, String stationName, String producerName, String connectionId) {
-        this.jetStreamContext = jetStreamContext;
+    public MemphisProducer(Connection connection, String stationName, String producerName, String connectionId) throws MemphisConnectException {
+        try {
+            this.jetStreamContext = connection.jetStream();
+        } catch(IOException e) {
+            throw new MemphisConnectException(e.getMessage());
+        }
         this.stationName = stationName;
         this.connectionId = connectionId;
-        this.producerName = producerName;
+        this.producerName = producerName.toLowerCase();
     }
 
     /**

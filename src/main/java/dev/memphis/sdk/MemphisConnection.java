@@ -1,8 +1,8 @@
 package dev.memphis.sdk;
 
-import dev.memphis.sdk.consumer.MemphisCallbackFunction;
+import dev.memphis.sdk.consumer.MemphisConsumerCallback;
 import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
-import dev.memphis.sdk.consumer.MemphisSynchronousConsumer;
+import dev.memphis.sdk.consumer.MemphisBatchConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -20,11 +20,10 @@ import java.util.concurrent.Future;
 public class MemphisConnection {
 
     private final Connection brokerConnection;
-    private final JetStream jetStreamContext;
     private final ClientOptions opts;
     private final String connectionId;
 
-    MemphisConnection(ClientOptions opts) throws MemphisConnectException {
+    public MemphisConnection(ClientOptions opts) throws MemphisConnectException {
         this.opts = opts;
 
         UUID uuid = UUID.randomUUID();
@@ -61,26 +60,31 @@ public class MemphisConnection {
 
         try {
             this.brokerConnection = Nats.connect(natsConnOptions);
-            this.jetStreamContext = this.brokerConnection.jetStream();
         } catch (Exception e) {
             throw new MemphisConnectException("Error occurred while connecting to Memphis: " + e.getMessage());
         }
     }
 
+    /**
+     * Closes the connection if connected
+     * @throws InterruptedException
+     */
     public void close() throws InterruptedException {
-        this.brokerConnection.close();
+        if(isConnected()) {
+            brokerConnection.close();
+        }
     }
 
+    /**
+     * Checks the connection status.
+     * @return true if connected, false otherwise
+     */
     public boolean isConnected() {
-        return false;
+        return brokerConnection.getStatus() == Connection.Status.CONNECTED;
     }
 
-    public Future<Void> produce() {
-        return null;
-    }
-
-    public MemphisProducer createProducer(String stationName, String producerName) {
-        return new MemphisProducer(jetStreamContext, stationName, producerName, connectionId);
+    public MemphisProducer createProducer(String stationName, String producerName) throws MemphisConnectException {
+        return new MemphisProducer(brokerConnection, stationName, producerName, connectionId);
     }
 
     /**
@@ -89,12 +93,12 @@ public class MemphisConnection {
      * The consumer implements the Runnable interface so that it can be
      * executed in a separate thread, if desired.
      * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group
+     * @param consumerGroup name of the consumer group to assign consumer to
      * @param callbackFunction callback function that is called on each batch of messages
      * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction) {
-        return new MemphisCallbackConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
+    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction) throws MemphisException {
+        return new MemphisCallbackConsumer(brokerConnection, stationName, consumerGroup, callbackFunction, opts);
     }
 
     /**
@@ -103,19 +107,11 @@ public class MemphisConnection {
      * The consumer implements the Runnable interface so that it can be
      * executed in a separate thread, if desired.
      * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group
+     * @param consumerGroup name of the consumer group to assign consumer to
      * @return an instance of MemphisSynchronousConsumer
      */
-    public MemphisSynchronousConsumer createSynchronousConsumer(String stationName, String consumerGroup) {
-        return new MemphisSynchronousConsumer(jetStreamContext, stationName, consumerGroup, opts);
-    }
-
-    public String createUniqueProducerSuffix() {
-        return null;
-    }
-
-    public String createUniqueConsumerSuffix() {
-        return null;
+    public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) throws MemphisException {
+        return new MemphisBatchConsumer(brokerConnection, stationName, consumerGroup, opts);
     }
 
     public Future<Station> createStation() {

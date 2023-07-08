@@ -17,7 +17,7 @@ public class IntegrationTest {
                 .password("memphis")
                 .build();
 
-        var connection = Memphis.connect(options);
+        var connection = new MemphisConnection(options);
 
         var producer = connection.createProducer(stationName, "JavaProducer");
         byte[] msgText = "This is a test.".getBytes();
@@ -26,13 +26,15 @@ public class IntegrationTest {
             producer.produce(msgText);
         }
 
-        var consumer = connection.createSynchronousConsumer(stationName, "group");
+        var consumer = connection.createBatchConsumer(stationName, "test-group");
 
         var messages = consumer.fetch();
 
         for(var msg : messages) {
             msg.ack();
         }
+
+        consumer.destroy();
 
         connection.close();
 
