@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 public class MemphisConnection {
 
     private final Connection brokerConnection;
-    private final JetStream jetStreamContext;
     private final ClientOptions opts;
     private final String connectionId;
 
@@ -61,7 +60,6 @@ public class MemphisConnection {
 
         try {
             this.brokerConnection = Nats.connect(natsConnOptions);
-            this.jetStreamContext = this.brokerConnection.jetStream();
         } catch (Exception e) {
             throw new MemphisConnectException("Error occurred while connecting to Memphis: " + e.getMessage());
         }
@@ -85,8 +83,8 @@ public class MemphisConnection {
         return brokerConnection.getStatus() == Connection.Status.CONNECTED;
     }
 
-    public MemphisProducer createProducer(String stationName, String producerName) {
-        return new MemphisProducer(jetStreamContext, stationName, producerName, connectionId);
+    public MemphisProducer createProducer(String stationName, String producerName) throws MemphisConnectException {
+        return new MemphisProducer(brokerConnection, stationName, producerName, connectionId);
     }
 
     /**
@@ -99,8 +97,8 @@ public class MemphisConnection {
      * @param callbackFunction callback function that is called on each batch of messages
      * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction) {
-        return new MemphisCallbackConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
+    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction) throws MemphisException {
+        return new MemphisCallbackConsumer(brokerConnection, stationName, consumerGroup, callbackFunction, opts);
     }
 
     /**
@@ -112,8 +110,8 @@ public class MemphisConnection {
      * @param consumerGroup name of the consumer group to assign consumer to
      * @return an instance of MemphisSynchronousConsumer
      */
-    public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) {
-        return new MemphisBatchConsumer(jetStreamContext, stationName, consumerGroup, opts);
+    public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) throws MemphisException {
+        return new MemphisBatchConsumer(brokerConnection, stationName, consumerGroup, opts);
     }
 
     public Future<Station> createStation() {
