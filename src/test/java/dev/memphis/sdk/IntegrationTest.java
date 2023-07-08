@@ -17,7 +17,7 @@ public class IntegrationTest {
                 .password("memphis")
                 .build();
 
-        var connection = Memphis.connect(options);
+        var connection = new MemphisConnection(options);
 
         var producer = connection.createProducer(stationName, "JavaProducer");
         byte[] msgText = "This is a test.".getBytes();

@@ -24,7 +24,7 @@ public class MemphisConnection {
     private final ClientOptions opts;
     private final String connectionId;
 
-    MemphisConnection(ClientOptions opts) throws MemphisConnectException {
+    public MemphisConnection(ClientOptions opts) throws MemphisConnectException {
         this.opts = opts;
 
         UUID uuid = UUID.randomUUID();

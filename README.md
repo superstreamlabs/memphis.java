@@ -59,7 +59,7 @@ import com.memphis.Memphis;
 
 ### Connecting to Memphis
 
-First, we need to create Memphis `object` and then connect with Memphis by using `Memphis.connect`.
+First, we need to create a connection to the broker using `MemphisConnection`.
 
 ```java
 ClientOptions opts = new ClientOptions.Builder()
@@ -76,7 +76,7 @@ ClientOptions opts = new ClientOptions.Builder()
     .caFile("<rootCA.pem>")		// ca_file, for TLS connection
     .build();
 
-MemphisConnection memphisConnection = Memphis.connect(opts);
+MemphisConnection memphisConnection = MemphisConnection(opts);
 ```
 
 Once connected, the entire functionalities offered by Memphis are available.
