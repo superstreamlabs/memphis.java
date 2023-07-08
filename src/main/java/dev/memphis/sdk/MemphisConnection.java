@@ -71,12 +71,12 @@ public class MemphisConnection {
         this.brokerConnection.close();
     }
 
+    /**
+     * Checks the connection status.
+     * @return true if connected, false otherwise
+     */
     public boolean isConnected() {
-        return false;
-    }
-
-    public Future<Void> produce() {
-        return null;
+        return brokerConnection.getStatus() == Connection.Status.CONNECTED;
     }
 
     public MemphisProducer createProducer(String stationName, String producerName) {
