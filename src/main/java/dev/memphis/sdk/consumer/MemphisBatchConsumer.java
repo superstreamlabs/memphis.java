@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MemphisSynchronousConsumer {
+public class MemphisBatchConsumer {
     private static final String STATION_SUFFIX = ".final";
 
     private final String stationName;
@@ -19,7 +19,7 @@ public class MemphisSynchronousConsumer {
     private final Duration maxWaitTime;
     private final int batchSize;
 
-    public MemphisSynchronousConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, ClientOptions opts) {
+    public MemphisBatchConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, ClientOptions opts) {
         this.stationName = stationName;
         this.consumerGroup = consumerGroup;
         this.jetStreamContext = jetStreamContext;

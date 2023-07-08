@@ -229,89 +229,63 @@ producer.produce(
 producer.destroy();
 ```
 
-### Creating a Consumer
-
-```java
-Consumer consumer = memphisConnection.createConsumer(
-          "<station-name>",
-          "<consumer-name>",
-          "<group-name>",// defaults to the consumer name
-          pull_interval_ms, // defaults to 1000
-          batch_size, // defaults to 10
-          batch_max_time_to_wait_ms, // defaults to 5000
-          max_ack_time_ms, // defaults to 30000
-          max_msg_deliveries, // defaults to 10
-          generate_random_suffix,
-          start_consume_from_sequence, // start consuming from a specific sequence. defaults to 1
-          last_messages // consume the last N messages, defaults to -1 (all messages in the station)
-);
-```
-
-### Setting a context for message handler function
-
-```java
-Map<String, Object> context = new HashMap<>();
-context.put("key", "value");
-consumer.setContext(context);
-```
-
-### Processing messages
-
-Once all the messages in the station were consumed the msg_handler will receive error: `Memphis: TimeoutError`.
+### Creating a Callback Consumer
+The callback consumer executes a provided function on each batch of messages received.  The callback function
+can be executed in a separate thread if desired.  Once all the messages in the station were consumed the
+message handler function will receive error: `Memphis: TimeoutError`.
 
 ```java
 public void msgHandler(List<Message> msgs, Exception error, Object context) {
     for (Message msg : msgs) {
         System.out.println("message: " + msg.getData());
-        msg.ack().get();
+        msg.ack();
     }
     if (error != null) {
         System.out.println(error);
     }
 }
-
-consumer.consume(this::msgHandler);
+        
+MemphisCallbackConsumer consumer = memphisConnection.createCallbackConsumer(
+          "<station-name>",
+          "<group-name>",
+          this::msgHandler
+        
+);
 ```
 
-### Fetch a single batch of messages
+### Processing messages
+
 ```java
-messagesFuture = memphisConnection.fetchMessages("<station-name>", "<consumer-name>", "<group-name>", 10, 5000, 30000, 10, false, 1, -1).get();
+consumer.run();
 ```
 
-### Fetch a single batch of messages after creating a consumer
-```java
-List<Message> msgs = consumer.fetch(10); // fetches 10 messages from the station
+### Creating a Batch Consumer
+The callback consumer executes a provided function on each batch of messages received.  The callback function
+can be executed in a separate thread if desired.  Once all the messages in the station were consumed the
+message handler function will receive error: `Memphis: TimeoutError`.
+
+```java 
+MemphisBatchConsumer consumer = memphisConnection.createBatchConsumer(
+          "<station-name>",
+          "<group-name>"
+);
 ```
 
-
-### Acknowledge a message
-
-Acknowledge a message indicates the Memphis server to not re-send the same message again to the same consumer / consumers group
+### Processing messages
 
 ```java
-message.ack();
-```
+var messages = consumer.fetch();
 
-### Get headers 
-Get headers per message
-
-```java
-message.getHeaders();
-```
-
-### Get message sequence number
-Get message sequence number
-
-```java
-msg.getSequenceNumber();
+for(var msg : messages) {
+    msg.ack();
+}
 ```
 
 ### Destroying a Consumer
 
 ```java
-consumer.destroy().get();
+consumer.destroy();
 ```
-
 
 ### Check connection status
 

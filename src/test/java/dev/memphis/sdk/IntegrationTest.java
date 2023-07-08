@@ -26,7 +26,7 @@ public class IntegrationTest {
             producer.produce(msgText);
         }
 
-        var consumer = connection.createSynchronousConsumer(stationName, "group");
+        var consumer = connection.createBatchConsumer(stationName, "test-group");
 
         var messages = consumer.fetch();
 

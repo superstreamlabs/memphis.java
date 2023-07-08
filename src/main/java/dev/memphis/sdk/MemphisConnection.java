@@ -1,8 +1,8 @@
 package dev.memphis.sdk;
 
-import dev.memphis.sdk.consumer.MemphisCallbackFunction;
+import dev.memphis.sdk.consumer.MemphisConsumerCallback;
 import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
-import dev.memphis.sdk.consumer.MemphisSynchronousConsumer;
+import dev.memphis.sdk.consumer.MemphisBatchConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.JetStream;
@@ -89,11 +89,11 @@ public class MemphisConnection {
      * The consumer implements the Runnable interface so that it can be
      * executed in a separate thread, if desired.
      * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group
+     * @param consumerGroup name of the consumer group to assign consumer to
      * @param callbackFunction callback function that is called on each batch of messages
      * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction) {
+    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction) {
         return new MemphisCallbackConsumer(jetStreamContext, stationName, consumerGroup, callbackFunction, opts);
     }
 
@@ -103,11 +103,11 @@ public class MemphisConnection {
      * The consumer implements the Runnable interface so that it can be
      * executed in a separate thread, if desired.
      * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group
+     * @param consumerGroup name of the consumer group to assign consumer to
      * @return an instance of MemphisSynchronousConsumer
      */
-    public MemphisSynchronousConsumer createSynchronousConsumer(String stationName, String consumerGroup) {
-        return new MemphisSynchronousConsumer(jetStreamContext, stationName, consumerGroup, opts);
+    public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) {
+        return new MemphisBatchConsumer(jetStreamContext, stationName, consumerGroup, opts);
     }
 
     public String createUniqueProducerSuffix() {

@@ -19,12 +19,12 @@ public class MemphisCallbackConsumer implements Runnable {
     private final String stationName;
     private final String consumerGroup;
     private final JetStream jetStreamContext;
-    private final MemphisCallbackFunction callbackFunction;
+    private final MemphisConsumerCallback callbackFunction;
     private final Duration maxWaitTime;
     private final int batchSize;
     private final Duration pullInterval;
 
-    public MemphisCallbackConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, MemphisCallbackFunction callbackFunction, ClientOptions opts) {
+    public MemphisCallbackConsumer(JetStream jetStreamContext, String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction, ClientOptions opts) {
         this.stationName = stationName;
         this.consumerGroup = consumerGroup;
         this.jetStreamContext = jetStreamContext;
