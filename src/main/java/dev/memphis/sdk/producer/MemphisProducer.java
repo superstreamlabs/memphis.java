@@ -30,7 +30,7 @@ public class MemphisProducer {
         }
         this.stationName = stationName;
         this.connectionId = connectionId;
-        this.producerName = producerName;
+        this.producerName = producerName.toLowerCase();
     }
 
     /**

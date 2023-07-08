@@ -24,11 +24,11 @@ public class MemphisCallbackConsumer implements Runnable {
     private final int batchSize;
     private final Duration pullInterval;
     private final JetStreamSubscription sub;
-    private final Connection brokerConnection;
+    private final Connection connection;
 
     public MemphisCallbackConsumer(Connection brokerConnection, String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction, ClientOptions opts) throws MemphisException {
-        this.brokerConnection = brokerConnection;
-        this.consumerGroup = consumerGroup;
+        this.connection = brokerConnection;
+        this.consumerGroup = consumerGroup.toLowerCase();
         this.callbackFunction = callbackFunction;
         this.maxWaitTime = opts.maxWaitTime;
         this.batchSize = opts.batchSize;
@@ -38,7 +38,7 @@ public class MemphisCallbackConsumer implements Runnable {
                 .durable(this.consumerGroup)
                 .build();
         try {
-            var context = brokerConnection.jetStream();
+            var context = connection.jetStream();
             sub = context.subscribe(stationName + STATION_SUFFIX, pullOptions);
         } catch (IOException | JetStreamApiException e) {
             throw new MemphisException(e.getMessage());

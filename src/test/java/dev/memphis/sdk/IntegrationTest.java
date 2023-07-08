@@ -34,6 +34,8 @@ public class IntegrationTest {
             msg.ack();
         }
 
+        consumer.destroy();
+
         connection.close();
 
         assertTrue(messages.size() >= numMessages);

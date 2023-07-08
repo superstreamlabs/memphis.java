@@ -17,7 +17,6 @@ import java.util.List;
 public class MemphisBatchConsumer {
     private static final String STATION_SUFFIX = ".final";
 
-    private final String stationName;
     private final String consumerGroup;
     private final Duration maxWaitTime;
     private final int batchSize;
@@ -26,8 +25,7 @@ public class MemphisBatchConsumer {
 
     public MemphisBatchConsumer(Connection brokerConnection, String stationName, String consumerGroup, ClientOptions opts) throws MemphisException {
         this.connection = brokerConnection;
-        this.stationName = stationName;
-        this.consumerGroup = consumerGroup;
+        this.consumerGroup = consumerGroup.toLowerCase();
         this.maxWaitTime = opts.maxWaitTime;
         this.batchSize = opts.batchSize;
 
