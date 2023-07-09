@@ -5,7 +5,6 @@ import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
 import dev.memphis.sdk.consumer.MemphisBatchConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
-import io.nats.client.JetStream;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import nl.altindag.ssl.SSLFactory;

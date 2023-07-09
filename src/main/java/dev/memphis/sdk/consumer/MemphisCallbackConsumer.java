@@ -26,7 +26,7 @@ public class MemphisCallbackConsumer implements Runnable {
     private final JetStreamSubscription sub;
     private final Connection connection;
 
-    private boolean canceled = false;
+    private volatile boolean canceled = false;
 
     private final ConsumerKeepAlive keepAlive;
     private final Thread keepAliveThread;

@@ -1,6 +1,5 @@
 package dev.memphis.sdk.consumer;
 
-import io.nats.client.Connection;
 import io.nats.client.JetStreamApiException;
 import io.nats.client.JetStreamManagement;
 
@@ -18,7 +17,7 @@ class ConsumerKeepAlive implements Runnable {
     private final String consumerGroup;
     private final Duration sleepPeriod;
 
-    private boolean canceled = false;
+    private volatile boolean canceled = false;
 
     public ConsumerKeepAlive(JetStreamManagement jsManagement, String stationName, String consumerGroup, Duration sleepPeriod) {
         this.jsManagement = jsManagement;
