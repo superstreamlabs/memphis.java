@@ -1,7 +1,6 @@
 package dev.memphis.sdk.consumer;
 
 import dev.memphis.sdk.ClientOptions;
-import dev.memphis.sdk.MemphisConnectException;
 import dev.memphis.sdk.MemphisException;
 import dev.memphis.sdk.MemphisMessage;
 import io.nats.client.*;
