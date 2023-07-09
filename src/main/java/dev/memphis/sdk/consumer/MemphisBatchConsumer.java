@@ -23,6 +23,9 @@ public class MemphisBatchConsumer {
     private final JetStreamSubscription sub;
     private final Connection connection;
 
+    private final ConsumerKeepAlive keepAlive;
+    private final Thread keepAliveThread;
+
     public MemphisBatchConsumer(Connection brokerConnection, String stationName, String consumerGroup, ClientOptions opts) throws MemphisException {
         this.connection = brokerConnection;
         this.consumerGroup = consumerGroup.toLowerCase();
@@ -35,6 +38,9 @@ public class MemphisBatchConsumer {
         try {
             var context = connection.jetStream();
             sub = context.subscribe(stationName + STATION_SUFFIX, pullOptions);
+            keepAlive = new ConsumerKeepAlive(connection.jetStreamManagement(), stationName, consumerGroup, Duration.ofSeconds(1));
+            keepAliveThread = new Thread(keepAlive);
+            keepAliveThread.start();
         } catch (IOException | JetStreamApiException e) {
             throw new MemphisException(e.getMessage());
         }
@@ -58,6 +64,12 @@ public class MemphisBatchConsumer {
      * Destroy the consumer object.
      */
     public void destroy() {
+        keepAlive.cancel();
+        try {
+            keepAliveThread.join();
+        } catch(InterruptedException e) {
+
+        }
         sub.unsubscribe();
     }
 }
