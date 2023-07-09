@@ -16,7 +16,6 @@ class ConsumerKeepAlive implements Runnable {
     private final String stationName;
     private final String consumerGroup;
     private final Duration sleepPeriod;
-
     private volatile boolean canceled = false;
 
     public ConsumerKeepAlive(JetStreamManagement jsManagement, String stationName, String consumerGroup, Duration sleepPeriod) {
