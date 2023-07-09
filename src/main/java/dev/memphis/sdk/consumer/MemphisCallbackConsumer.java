@@ -26,6 +26,11 @@ public class MemphisCallbackConsumer implements Runnable {
     private final JetStreamSubscription sub;
     private final Connection connection;
 
+    private boolean canceled = false;
+
+    private final ConsumerKeepAlive keepAlive;
+    private final Thread keepAliveThread;
+
     public MemphisCallbackConsumer(Connection brokerConnection, String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction, ClientOptions opts) throws MemphisException {
         this.connection = brokerConnection;
         this.consumerGroup = consumerGroup.toLowerCase();
@@ -40,6 +45,9 @@ public class MemphisCallbackConsumer implements Runnable {
         try {
             var context = connection.jetStream();
             sub = context.subscribe(stationName + STATION_SUFFIX, pullOptions);
+            keepAlive = new ConsumerKeepAlive(brokerConnection.jetStreamManagement(), stationName, consumerGroup, Duration.ofSeconds(1));
+            keepAliveThread = new Thread(keepAlive);
+            keepAliveThread.start();
         } catch (IOException | JetStreamApiException e) {
             throw new MemphisException(e.getMessage());
         }
@@ -49,7 +57,7 @@ public class MemphisCallbackConsumer implements Runnable {
      * Run the callback processing loop.
      */
     public void run() {
-        while(true) {
+        while(!canceled) {
             List<MemphisMessage> memphisMessages = new ArrayList<>();
             for(Message msg : sub.fetch(batchSize, maxWaitTime)) {
                 memphisMessages.add(new MemphisMessage(msg, consumerGroup));
@@ -67,6 +75,17 @@ public class MemphisCallbackConsumer implements Runnable {
      * Disconnect the consumer.
      */
     public void destroy() {
+        cancel();
+        keepAlive.cancel();
+        try {
+            keepAliveThread.join();
+        } catch(InterruptedException e) {
+
+        }
         sub.unsubscribe();
+    }
+
+    public void cancel() {
+        this.canceled = true;
     }
 }
