@@ -15,6 +15,7 @@ public class ClientOptions {
     public final Duration maxWaitTime;
     public final int batchSize;
     public final Duration pullInterval;
+    public final int accountId;
 
     private ClientOptions(Builder b) {
         this.host = b.host;
@@ -29,6 +30,7 @@ public class ClientOptions {
         this.maxWaitTime = b.maxWaitTime;
         this.batchSize = b.batchSize;
         this.pullInterval = b.pullInterval;
+        this.accountId = b.accountId;
     }
 
     /**
@@ -113,6 +115,8 @@ public class ClientOptions {
         private Duration maxWaitTime = Duration.ofMillis(5000);
         private int batchSize = 10;
         private Duration pullInterval = Duration.ofMillis(1000);
+        // on-premise version defaults to account id of 1
+        private int accountId = 1;
 
         /***
          *
@@ -259,12 +263,21 @@ public class ClientOptions {
 
         /***
          *
-
          * @param batchSize maximum number of messages to grab from the broker per batch
          * @return the Builder object for chaining purpose
          */
         public Builder batchSize(int batchSize) {
             this.batchSize = batchSize;
+            return this;
+        }
+
+        /***
+         *
+         * @param accountId account id
+         * @return the Builder object for chaining purpose
+         */
+        public Builder accountId(int accountId) {
+            this.accountId = accountId;
             return this;
         }
     }

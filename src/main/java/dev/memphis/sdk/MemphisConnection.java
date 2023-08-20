@@ -1,10 +1,15 @@
 package dev.memphis.sdk;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.memphis.sdk.consumer.ConsumerOptions;
+import dev.memphis.sdk.consumer.CreateConsumerRequest;
 import dev.memphis.sdk.consumer.MemphisConsumerCallback;
 import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
 import dev.memphis.sdk.consumer.MemphisBatchConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
+import io.nats.client.Message;
 import io.nats.client.Nats;
 import io.nats.client.Options;
 import nl.altindag.ssl.SSLFactory;
@@ -13,6 +18,7 @@ import nl.altindag.ssl.util.PemUtils;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
@@ -36,7 +42,12 @@ public class MemphisConnection {
                 .connectionTimeout(opts.timeout);
 
         if(opts.authenticationMethod instanceof ClientOptions.Password) {
-            natsConnOptsBuilder = natsConnOptsBuilder.userInfo(opts.username, opts.authenticationMethod.getString());
+            // To support multi-tenancy, user ids are of the form
+            // username$accountId.  This serves several purposes
+            // including namespacing usernames and controlling access
+            String user = opts.username + "$" + opts.accountId;
+            natsConnOptsBuilder = natsConnOptsBuilder.userInfo(user,
+                    opts.authenticationMethod.getString());
         } else if(opts.authenticationMethod instanceof ClientOptions.ConnectionToken) {
             natsConnOptsBuilder = natsConnOptsBuilder.token(opts.authenticationMethod.getString());
         }
@@ -80,6 +91,41 @@ public class MemphisConnection {
      */
     public boolean isConnected() {
         return brokerConnection.getStatus() == Connection.Status.CONNECTED;
+    }
+
+    /**
+     * Registers a new consumer with the broker.
+     *
+     * @param options Options for creating the consumer with
+     */
+    private void registerNewConsumer(ConsumerOptions options) throws MemphisException {
+        CreateConsumerRequest request = new CreateConsumerRequest();
+        request.consumerName = options.consumerName;
+        request.consumersGroup = options.consumersGroup;
+        request.stationName = options.stationName;
+        request.requestVersion = 3;
+        request.maxAckTimeMs = options.maxAckTimeMs;
+        request.maxMsgDeliveries = options.maxMsgDeliveries;
+        request.startConsumeFromSequence = options.startConsumeFromSequence;
+        request.lastMessages = options.lastMessages;
+        request.connectionId = connectionId;
+        request.username = opts.username;
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            byte[] serializedRequest = mapper.writeValueAsBytes(request);
+
+            Message responseMsg = brokerConnection.request(Utils.InternalChannels.CREATE_CONSUMER.getChannelName(),
+                    serializedRequest, Duration.ofMillis(5000));
+
+            responseMsg.getData();
+
+            // TODO deserialize message
+            // TODO check response
+        } catch (JsonProcessingException | InterruptedException e) {
+            throw new MemphisException(e.getMessage());
+        }
     }
 
     public MemphisProducer createProducer(String stationName, String producerName) throws MemphisConnectException {
