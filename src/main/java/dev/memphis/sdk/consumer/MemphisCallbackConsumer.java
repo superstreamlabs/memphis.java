@@ -27,7 +27,7 @@ public class MemphisCallbackConsumer {
     private final Map<Integer, ConsumerKeepAlive> keepAlives = new HashMap<>();
     private final List<Integer> partitions;
 
-    private class ConsumerRunnable implements Runnable {
+    private static class ConsumerRunnable implements Runnable {
         private final JetStreamSubscription sub;
         private volatile boolean canceled = false;
         private final Duration maxWaitTime;
