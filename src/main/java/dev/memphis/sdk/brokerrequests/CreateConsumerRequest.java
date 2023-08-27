@@ -1,4 +1,4 @@
-package dev.memphis.sdk.consumer;
+package dev.memphis.sdk.brokerrequests;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class CreateConsumerRequest {
-    @JsonProperty("consumer_name")
+    @JsonProperty("name")
     public String consumerName;
 
     @JsonProperty("station_name")
@@ -30,19 +30,15 @@ public class CreateConsumerRequest {
     @JsonProperty("max_msg_deliveries")
     public Integer maxMsgDeliveries;
 
-    @JsonProperty("start_consumer_from_sequence")
+    @JsonProperty("start_consume_from_sequence")
     public Integer startConsumeFromSequence;
 
     @JsonProperty("last_messages")
     public Integer lastMessages;
 
     @JsonProperty("req_version")
-    public Integer requestVersion;
+    public Integer requestVersion = 3;
 
     @JsonProperty("username")
     public String username;
-
-    public CreateConsumerRequest() {
-
-    }
 }

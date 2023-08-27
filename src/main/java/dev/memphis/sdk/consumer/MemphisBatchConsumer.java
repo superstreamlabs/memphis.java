@@ -3,43 +3,54 @@ package dev.memphis.sdk.consumer;
 import dev.memphis.sdk.ClientOptions;
 import dev.memphis.sdk.MemphisException;
 import dev.memphis.sdk.MemphisMessage;
+import dev.memphis.sdk.Utils;
 import io.nats.client.*;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A consumer that fetches batches of messages synchronously.
  */
 public class MemphisBatchConsumer {
     private static final String STATION_SUFFIX = ".final";
+    private final List<Integer> partitions;
+    private final Map<Integer, JetStreamSubscription> subscriptions = new HashMap<>();
+    private final Map<Integer, Thread> keepAliveThreads = new HashMap<>();
+    private final Map<Integer, ConsumerKeepAlive> keepAlives = new HashMap<>();
 
     private final String consumerGroup;
     private final Duration maxWaitTime;
     private final int batchSize;
-    private final JetStreamSubscription sub;
-    private final Connection connection;
 
-    private final ConsumerKeepAlive keepAlive;
-    private final Thread keepAliveThread;
-
-    public MemphisBatchConsumer(Connection brokerConnection, String stationName, String consumerGroup, ClientOptions opts) throws MemphisException {
-        this.connection = brokerConnection;
-        this.consumerGroup = consumerGroup.toLowerCase();
-        this.maxWaitTime = opts.maxWaitTime;
-        this.batchSize = opts.batchSize;
+    public MemphisBatchConsumer(Connection brokerConnection, ClientOptions clientOptions, ConsumerOptions consumerOptions, List<Integer> partitions) throws MemphisException {
+        this.partitions = partitions;
+        this.consumerGroup = consumerOptions.consumersGroup;
+        this.maxWaitTime = clientOptions.maxWaitTime;
+        this.batchSize = clientOptions.batchSize;
 
         PullSubscribeOptions pullOptions = PullSubscribeOptions.builder()
                 .durable(this.consumerGroup)
                 .build();
+
         try {
-            var context = connection.jetStream();
-            sub = context.subscribe(stationName + STATION_SUFFIX, pullOptions);
-            keepAlive = new ConsumerKeepAlive(connection.jetStreamManagement(), stationName, consumerGroup, Duration.ofSeconds(1));
-            keepAliveThread = new Thread(keepAlive);
-            keepAliveThread.start();
+            var context = brokerConnection.jetStream();
+            for(Integer partition : partitions) {
+                String internalName = Utils.getInternalName(consumerOptions.stationName);
+                String completeStationName = internalName + "$" + partition;
+                JetStreamSubscription sub = context.subscribe(completeStationName + STATION_SUFFIX, pullOptions);
+                subscriptions.put(partition, sub);
+
+                ConsumerKeepAlive keepAlive = new ConsumerKeepAlive(brokerConnection.jetStreamManagement(), completeStationName, consumerOptions.consumersGroup, Duration.ofSeconds(10));
+                Thread keepAliveThread = new Thread(keepAlive);
+                keepAliveThread.start();
+                keepAliveThreads.put(partition, keepAliveThread);
+                keepAlives.put(partition, keepAlive);
+            }
         } catch (IOException | JetStreamApiException e) {
             throw new MemphisException(e.getMessage());
         }
@@ -52,8 +63,15 @@ public class MemphisBatchConsumer {
      */
     public List<MemphisMessage> fetch() throws MemphisException {
         List<MemphisMessage> memphisMessages = new ArrayList<>();
-        for(Message msg : sub.fetch(batchSize, maxWaitTime)) {
-            memphisMessages.add(new MemphisMessage(msg, consumerGroup));
+        try {
+            for (Integer partNumber : partitions) {
+                JetStreamSubscription sub = subscriptions.get(partNumber);
+                for (Message msg : sub.fetch(batchSize, maxWaitTime)) {
+                    memphisMessages.add(new MemphisMessage(msg, consumerGroup));
+                }
+            }
+        } catch(IllegalStateException e) {
+            throw new MemphisException(e.getMessage());
         }
 
         return memphisMessages;
@@ -63,12 +81,17 @@ public class MemphisBatchConsumer {
      * Destroy the consumer object.
      */
     public void destroy() {
-        keepAlive.cancel();
+        for(Integer partNumber : partitions) {
+            subscriptions.get(partNumber).unsubscribe();
+            keepAlives.get(partNumber).cancel();
+        }
+
         try {
-            keepAliveThread.join();
+            for(Integer partNumber : partitions) {
+                keepAliveThreads.get(partNumber).join();
+            }
         } catch(InterruptedException e) {
 
         }
-        sub.unsubscribe();
     }
 }

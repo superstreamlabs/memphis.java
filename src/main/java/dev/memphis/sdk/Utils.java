@@ -12,19 +12,4 @@ public class Utils {
         name = name.toLowerCase();
         return name.replace('.', '#');
     }
-
-    public enum InternalChannels {
-        CREATE_CONSUMER("$memphis_producer_creations");
-
-
-        private final String channelName;
-
-        InternalChannels(String channelName) {
-            this.channelName = channelName;
-        }
-
-        String getChannelName() {
-            return channelName;
-        }
-    }
 }
