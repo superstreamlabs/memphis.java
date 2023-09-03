@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class CreateConsumerResponse {
-    @JsonProperty("partition_update")
+    @JsonProperty("error")
     public String error;
 
     @JsonProperty("partitions_update")
