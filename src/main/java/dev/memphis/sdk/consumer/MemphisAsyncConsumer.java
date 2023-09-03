@@ -18,7 +18,7 @@ import java.util.Map;
  * are received.  This class implements the Runnable interface
  * so that it can be run in a separate thread if desired.
  */
-public class MemphisCallbackConsumer {
+public class MemphisAsyncConsumer {
     private static final String STATION_SUFFIX = ".final";
 
     private final Map<Integer, Thread> subscriptionThreads = new HashMap<>();
@@ -75,7 +75,7 @@ public class MemphisCallbackConsumer {
         }
     }
 
-    public MemphisCallbackConsumer(Connection brokerConnection, ClientOptions clientOptions, ConsumerOptions consumerOptions, List<Integer> partitions, MemphisConsumerCallback callbackFunction) throws MemphisException {
+    public MemphisAsyncConsumer(Connection brokerConnection, ClientOptions clientOptions, ConsumerOptions consumerOptions, List<Integer> partitions, MemphisConsumerCallback callbackFunction) throws MemphisException {
         this.partitions = partitions;
 
         PullSubscribeOptions pullOptions = PullSubscribeOptions.builder()
@@ -111,20 +111,16 @@ public class MemphisCallbackConsumer {
     /**
      * Disconnect the consumer and release resources.
      */
-    public void destroy() {
+    public void destroy() throws InterruptedException{
         for(Integer partName : partitions) {
             subscriptions.get(partName).cancel();
             keepAlives.get(partName).cancel();
         }
 
-        try {
-            for(Integer partName : partitions) {
-                subscriptions.get(partName).unsubscribe();
-                subscriptionThreads.get(partName).join();
-                keepAliveThreads.get(partName).join();
-            }
-        } catch(InterruptedException e) {
-
+        for(Integer partName : partitions) {
+            subscriptionThreads.get(partName).join();
+            keepAliveThreads.get(partName).join();
+            subscriptions.get(partName).unsubscribe();
         }
     }
 }

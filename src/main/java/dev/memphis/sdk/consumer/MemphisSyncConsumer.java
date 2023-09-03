@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * A consumer that fetches batches of messages synchronously.
  */
-public class MemphisBatchConsumer {
+public class MemphisSyncConsumer {
     private static final String STATION_SUFFIX = ".final";
     private final List<Integer> partitions;
     private final Map<Integer, JetStreamSubscription> subscriptions = new HashMap<>();
@@ -27,7 +27,7 @@ public class MemphisBatchConsumer {
     private final Duration maxWaitTime;
     private final int batchSize;
 
-    public MemphisBatchConsumer(Connection brokerConnection, ClientOptions clientOptions, ConsumerOptions consumerOptions, List<Integer> partitions) throws MemphisException {
+    public MemphisSyncConsumer(Connection brokerConnection, ClientOptions clientOptions, ConsumerOptions consumerOptions, List<Integer> partitions) throws MemphisException {
         this.partitions = partitions;
         this.consumerGroup = consumerOptions.consumersGroup;
         this.maxWaitTime = clientOptions.maxWaitTime;
@@ -80,18 +80,14 @@ public class MemphisBatchConsumer {
     /**
      * Destroy the consumer object.
      */
-    public void destroy() {
+    public void destroy() throws InterruptedException {
         for(Integer partNumber : partitions) {
-            subscriptions.get(partNumber).unsubscribe();
             keepAlives.get(partNumber).cancel();
         }
 
-        try {
-            for(Integer partNumber : partitions) {
-                keepAliveThreads.get(partNumber).join();
-            }
-        } catch(InterruptedException e) {
-
+        for(Integer partNumber : partitions) {
+            keepAliveThreads.get(partNumber).join();
+            subscriptions.get(partNumber).unsubscribe();
         }
     }
 }

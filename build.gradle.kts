@@ -1,7 +1,6 @@
 plugins {
     id("java")
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("application")
 }
 
 group = "dev.memphis"
@@ -10,10 +9,6 @@ description = "memphis-java-sdk"
 
 repositories {
     mavenCentral()
-}
-
-application {
-    mainClass.set("dev.memphis.sdk.TestRunner")
 }
 
 dependencies {

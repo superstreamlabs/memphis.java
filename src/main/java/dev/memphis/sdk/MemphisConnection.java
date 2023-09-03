@@ -3,8 +3,8 @@ package dev.memphis.sdk;
 import dev.memphis.sdk.brokerrequests.BrokerConfigurationManager;
 import dev.memphis.sdk.consumer.ConsumerOptions;
 import dev.memphis.sdk.consumer.MemphisConsumerCallback;
-import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
-import dev.memphis.sdk.consumer.MemphisBatchConsumer;
+import dev.memphis.sdk.consumer.MemphisAsyncConsumer;
+import dev.memphis.sdk.consumer.MemphisSyncConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
@@ -100,30 +100,30 @@ public class MemphisConnection {
     }
 
     /**
-     * Creates a consumer that consumes messages over this connection.
+     * Creates an asynchronous consumer that consumes messages over this connection.
      * The consumer takes a callback function used to process the messages.
-     * The consumer implements the Runnable interface so that it can be
-     * executed in a separate thread, if desired.
+     * The callback is executed in a background thread when new messages
+     * arrive.
      * @param consumerOptions Configuration parameters for creating consumer
      * @param callbackFunction callback function that is called on each batch of messages
      * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisCallbackConsumer createCallbackConsumer(ConsumerOptions consumerOptions, MemphisConsumerCallback callbackFunction) throws MemphisException {
+    public MemphisAsyncConsumer createAsyncConsumer(ConsumerOptions consumerOptions, MemphisConsumerCallback callbackFunction) throws MemphisException {
         List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
-        return new MemphisCallbackConsumer(brokerConnection, opts, consumerOptions, partitions, callbackFunction);
+        return new MemphisAsyncConsumer(brokerConnection, opts, consumerOptions, partitions, callbackFunction);
     }
 
     /**
-     * Creates a consumer that consumes messages over this connection.
+     * Creates a synchronous consumer that consumes messages over this connection.
      * The consumer returns a list of messages when fetch() is called.
-     * The consumer implements the Runnable interface so that it can be
-     * executed in a separate thread, if desired.
+     * The consumer will either wait until it receives messages or
+     * the wait time is reached.
      * @param consumerOptions Configuration parameters for creating consumer
      * @return an instance of MemphisSynchronousConsumer
      */
-    public MemphisBatchConsumer createBatchConsumer(ConsumerOptions consumerOptions) throws MemphisException {
+    public MemphisSyncConsumer createSyncConsumer(ConsumerOptions consumerOptions) throws MemphisException {
         List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
-        return new MemphisBatchConsumer(brokerConnection, opts, consumerOptions, partitions);
+        return new MemphisSyncConsumer(brokerConnection, opts, consumerOptions, partitions);
     }
 
     public Future<Station> createStation() {
