@@ -91,7 +91,6 @@ public class MemphisAsyncConsumer {
                 JetStreamSubscription sub = context.subscribe(completeStationName + STATION_SUFFIX, pullOptions);
                 ConsumerRunnable runnable = new ConsumerRunnable(sub, clientOptions, consumerOptions, callbackFunction);
                 Thread consumerThread = new Thread(runnable);
-                consumerThread.start();
                 subscriptionThreads.put(partName, consumerThread);
                 subscriptions.put(partName, runnable);
 
@@ -106,7 +105,14 @@ public class MemphisAsyncConsumer {
         }
     }
 
-
+    /**
+     * Starts consumption of messages.
+     */
+    public void run() {
+        for(Thread thread : subscriptionThreads.values()) {
+            thread.start();
+        }
+    }
 
     /**
      * Disconnect the consumer and release resources.
