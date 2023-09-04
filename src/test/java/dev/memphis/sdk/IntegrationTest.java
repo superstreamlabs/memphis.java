@@ -1,5 +1,7 @@
 package dev.memphis.sdk;
 
+import dev.memphis.sdk.consumer.ConsumerOptions;
+import dev.memphis.sdk.producer.ProducerOptions;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -19,14 +21,24 @@ public class IntegrationTest {
 
         var connection = new MemphisConnection(options);
 
-        var producer = connection.createProducer(stationName, "JavaProducer");
+        ProducerOptions pOpts = new ProducerOptions.Builder()
+                .stationName(stationName)
+                .producerName("JavaProducer")
+                .build();
+
+        var producer = connection.createProducer(pOpts);
         byte[] msgText = "This is a test.".getBytes();
 
         for(int i = 0; i < numMessages; i++) {
             producer.produce(msgText);
         }
 
-        var consumer = connection.createBatchConsumer(stationName, "test-group");
+        ConsumerOptions cOpts = new ConsumerOptions.Builder()
+                .consumerName("JavaConsumer")
+                .stationName(stationName)
+                .build();
+
+        var consumer = connection.createSyncConsumer(cOpts);
 
         var messages = consumer.fetch();
 

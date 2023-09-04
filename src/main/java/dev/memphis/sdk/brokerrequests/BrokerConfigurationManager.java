@@ -3,6 +3,7 @@ package dev.memphis.sdk.brokerrequests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.memphis.sdk.MemphisException;
 import dev.memphis.sdk.consumer.ConsumerOptions;
+import dev.memphis.sdk.producer.ProducerOptions;
 import io.nats.client.Connection;
 import io.nats.client.Message;
 
@@ -15,6 +16,7 @@ import java.time.Duration;
  */
 public class BrokerConfigurationManager {
     private static final String CREATE_CONSUMER_CHANNEL = "$memphis_consumer_creations";
+    private static final String CREATE_PRODUCER_CHANNEL = "$memphis_producer_creations";
     private static final Duration RESPONSE_WAIT_TIME = Duration.ofSeconds(5);
 
     private final Connection brokerConnection;
@@ -30,7 +32,7 @@ public class BrokerConfigurationManager {
     /**
      * Registers a new consumer with the broker.
      *
-     * @param options Options for creating the consumer with
+     * @param options Options for creating the consumer
      */
     public PartitionsUpdate registerNewConsumer(ConsumerOptions options) throws MemphisException {
         CreateConsumerRequest request = new CreateConsumerRequest();
@@ -65,6 +67,42 @@ public class BrokerConfigurationManager {
 
         } catch (InterruptedException | IOException e) {
             throw new MemphisException("Error creating consumer: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Registers a new producer with the broker.
+     *
+     * @param options Options for creating the producer
+     */
+    public PartitionsUpdate registerNewProducer(ProducerOptions options) throws MemphisException {
+        CreateProducerRequest request = new CreateProducerRequest();
+        request.producerName = options.producerName;
+        request.stationName = options.stationName;
+        request.connectionId = connectionId;
+        request.username = user;
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            byte[] serializedRequest = mapper.writeValueAsBytes(request);
+
+            Message responseMsg = brokerConnection.request(CREATE_PRODUCER_CHANNEL,
+                    serializedRequest, RESPONSE_WAIT_TIME);
+
+            byte[] serializedResponse = responseMsg.getData();
+
+            // response can be either string or JSON object.
+            CreateProducerResponse response = mapper.readValue(serializedResponse, CreateProducerResponse.class);
+
+            if(response.error != null && !response.error.isEmpty()) {
+                throw new MemphisException("Error creating producer: " + response.error);
+            }
+
+            return response.partitionsUpdate;
+
+        } catch (InterruptedException | IOException e) {
+            throw new MemphisException("Error creating producer: " + e.getMessage());
         }
     }
 }
