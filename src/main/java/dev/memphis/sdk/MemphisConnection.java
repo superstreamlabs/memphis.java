@@ -5,6 +5,7 @@ import dev.memphis.sdk.consumer.ConsumerOptions;
 import dev.memphis.sdk.consumer.MemphisConsumerCallback;
 import dev.memphis.sdk.consumer.MemphisAsyncConsumer;
 import dev.memphis.sdk.consumer.MemphisSyncConsumer;
+import dev.memphis.sdk.producer.ProducerOptions;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
@@ -94,9 +95,15 @@ public class MemphisConnection {
     }
 
 
-
-    public MemphisProducer createProducer(String stationName, String producerName) throws MemphisConnectException {
-        return new MemphisProducer(brokerConnection, stationName, producerName, connectionId);
+    /**
+     * Creates a producer for sending messages to a station.
+     * @param producerOptions Configuration parameters for creating producer
+     * @return an instance of
+     * @throws MemphisConnectException
+     */
+    public MemphisProducer createProducer(ProducerOptions producerOptions) throws MemphisException {
+        List<Integer> partitions = manager.registerNewProducer(producerOptions).partitionsList;
+        return new MemphisProducer(brokerConnection, connectionId, producerOptions, partitions);
     }
 
     /**
@@ -106,7 +113,7 @@ public class MemphisConnection {
      * arrive.
      * @param consumerOptions Configuration parameters for creating consumer
      * @param callbackFunction callback function that is called on each batch of messages
-     * @return an instance of MemphisCallbackConsumer
+     * @return an instance of MemphisAsyncConsumer
      */
     public MemphisAsyncConsumer createAsyncConsumer(ConsumerOptions consumerOptions, MemphisConsumerCallback callbackFunction) throws MemphisException {
         List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
@@ -119,7 +126,7 @@ public class MemphisConnection {
      * The consumer will either wait until it receives messages or
      * the wait time is reached.
      * @param consumerOptions Configuration parameters for creating consumer
-     * @return an instance of MemphisSynchronousConsumer
+     * @return an instance of MemphisSyncConsumer
      */
     public MemphisSyncConsumer createSyncConsumer(ConsumerOptions consumerOptions) throws MemphisException {
         List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
