@@ -22,4 +22,4 @@ jobs:
         cd ./.github/scripts/quickstart_java
         ls
         npm ci
-        node update_quickstart_go.js
+        node update_quickstart_java.js
