@@ -34,7 +34,7 @@ class ConsumerKeepAlive implements Runnable {
             }
         } catch(IOException | JetStreamApiException e) {
             throw new RuntimeException(e.getMessage());
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IllegalStateException e) {
             // do nothing
         }
     }

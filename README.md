@@ -229,26 +229,22 @@ producer.produce(
 producer.destroy();
 ```
 
-### Creating a Callback Consumer
-The callback consumer executes a provided function on each batch of messages received.  The callback function
-can be executed in a separate thread if desired.  Once all the messages in the station were consumed the
-message handler function will receive error: `Memphis: TimeoutError`.
+### Creating an Asynchronous Consumer
+The asynchronous consumer executes a provided function on each batch of messages received in a background thread.
 
 ```java
-public void msgHandler(List<Message> msgs, Exception error, Object context) {
-    for (Message msg : msgs) {
-        System.out.println("message: " + msg.getData());
-        msg.ack();
-    }
-    if (error != null) {
-        System.out.println(error);
-    }
-}
-        
-MemphisCallbackConsumer consumer = memphisConnection.createCallbackConsumer(
-          "<station-name>",
-          "<group-name>",
-          this::msgHandler
+ConsumerOptions opts = new ConsumerOptions.Builder()
+        .consumerName("test-runner")
+        .stationName("example-station")
+        .build();
+
+MemphisAsynchronousConsumer consumer = memphisConnection.createAsyncConsumer(
+        opts,
+        messages -> {
+            for(MemphisMessage msg : messages) {
+                System.out.println(new String(msg.getData(), StandardCharsets.UTF_8));
+            }
+        });
         
 );
 ```
@@ -259,16 +255,16 @@ MemphisCallbackConsumer consumer = memphisConnection.createCallbackConsumer(
 consumer.run();
 ```
 
-### Creating a Batch Consumer
-The callback consumer executes a provided function on each batch of messages received.  The callback function
-can be executed in a separate thread if desired.  Once all the messages in the station were consumed the
-message handler function will receive error: `Memphis: TimeoutError`.
+### Creating a Synchronous Consumer
+The synchronous consumer checks for messages when its `fetch()` method is called.
+The call blocks until messages are available or the wait timeout has been exceeded.
 
 ```java 
-MemphisBatchConsumer consumer = memphisConnection.createBatchConsumer(
-          "<station-name>",
-          "<group-name>"
-);
+ConsumerOptions opts = new ConsumerOptions.Builder()
+        .consumerName("test-runner")
+        .stationName("example-station")
+        .build();
+MemphisSyncConsumer consumer = connection.createSyncConsumer(opts);
 ```
 
 ### Processing messages

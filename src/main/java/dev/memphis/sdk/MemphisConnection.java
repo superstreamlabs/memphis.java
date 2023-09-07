@@ -1,8 +1,10 @@
 package dev.memphis.sdk;
 
+import dev.memphis.sdk.brokerrequests.BrokerConfigurationManager;
+import dev.memphis.sdk.consumer.ConsumerOptions;
 import dev.memphis.sdk.consumer.MemphisConsumerCallback;
-import dev.memphis.sdk.consumer.MemphisCallbackConsumer;
-import dev.memphis.sdk.consumer.MemphisBatchConsumer;
+import dev.memphis.sdk.consumer.MemphisAsyncConsumer;
+import dev.memphis.sdk.consumer.MemphisSyncConsumer;
 import dev.memphis.sdk.producer.MemphisProducer;
 import io.nats.client.Connection;
 import io.nats.client.Nats;
@@ -13,6 +15,7 @@ import nl.altindag.ssl.util.PemUtils;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Future;
 
@@ -21,6 +24,7 @@ public class MemphisConnection {
     private final Connection brokerConnection;
     private final ClientOptions opts;
     private final String connectionId;
+    private final BrokerConfigurationManager manager;
 
     public MemphisConnection(ClientOptions opts) throws MemphisConnectException {
         this.opts = opts;
@@ -36,7 +40,12 @@ public class MemphisConnection {
                 .connectionTimeout(opts.timeout);
 
         if(opts.authenticationMethod instanceof ClientOptions.Password) {
-            natsConnOptsBuilder = natsConnOptsBuilder.userInfo(opts.username, opts.authenticationMethod.getString());
+            // To support multi-tenancy, user ids are of the form
+            // username$accountId.  This serves several purposes
+            // including namespacing usernames and controlling access
+            String user = opts.username + "$" + opts.accountId;
+            natsConnOptsBuilder = natsConnOptsBuilder.userInfo(user,
+                    opts.authenticationMethod.getString());
         } else if(opts.authenticationMethod instanceof ClientOptions.ConnectionToken) {
             natsConnOptsBuilder = natsConnOptsBuilder.token(opts.authenticationMethod.getString());
         }
@@ -59,6 +68,8 @@ public class MemphisConnection {
 
         try {
             this.brokerConnection = Nats.connect(natsConnOptions);
+
+            manager = new BrokerConfigurationManager(brokerConnection, connectionId, opts.username);
         } catch (Exception e) {
             throw new MemphisConnectException("Error occurred while connecting to Memphis: " + e.getMessage());
         }
@@ -82,35 +93,37 @@ public class MemphisConnection {
         return brokerConnection.getStatus() == Connection.Status.CONNECTED;
     }
 
+
+
     public MemphisProducer createProducer(String stationName, String producerName) throws MemphisConnectException {
         return new MemphisProducer(brokerConnection, stationName, producerName, connectionId);
     }
 
     /**
-     * Creates a consumer that consumes messages over this connection.
+     * Creates an asynchronous consumer that consumes messages over this connection.
      * The consumer takes a callback function used to process the messages.
-     * The consumer implements the Runnable interface so that it can be
-     * executed in a separate thread, if desired.
-     * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group to assign consumer to
+     * The callback is executed in a background thread when new messages
+     * arrive.
+     * @param consumerOptions Configuration parameters for creating consumer
      * @param callbackFunction callback function that is called on each batch of messages
      * @return an instance of MemphisCallbackConsumer
      */
-    public MemphisCallbackConsumer createCallbackConsumer(String stationName, String consumerGroup, MemphisConsumerCallback callbackFunction) throws MemphisException {
-        return new MemphisCallbackConsumer(brokerConnection, stationName, consumerGroup, callbackFunction, opts);
+    public MemphisAsyncConsumer createAsyncConsumer(ConsumerOptions consumerOptions, MemphisConsumerCallback callbackFunction) throws MemphisException {
+        List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
+        return new MemphisAsyncConsumer(brokerConnection, opts, consumerOptions, partitions, callbackFunction);
     }
 
     /**
-     * Creates a consumer that consumes messages over this connection.
+     * Creates a synchronous consumer that consumes messages over this connection.
      * The consumer returns a list of messages when fetch() is called.
-     * The consumer implements the Runnable interface so that it can be
-     * executed in a separate thread, if desired.
-     * @param stationName name of the Memphis station
-     * @param consumerGroup name of the consumer group to assign consumer to
+     * The consumer will either wait until it receives messages or
+     * the wait time is reached.
+     * @param consumerOptions Configuration parameters for creating consumer
      * @return an instance of MemphisSynchronousConsumer
      */
-    public MemphisBatchConsumer createBatchConsumer(String stationName, String consumerGroup) throws MemphisException {
-        return new MemphisBatchConsumer(brokerConnection, stationName, consumerGroup, opts);
+    public MemphisSyncConsumer createSyncConsumer(ConsumerOptions consumerOptions) throws MemphisException {
+        List<Integer> partitions = manager.registerNewConsumer(consumerOptions).partitionsList;
+        return new MemphisSyncConsumer(brokerConnection, opts, consumerOptions, partitions);
     }
 
     public Future<Station> createStation() {
