@@ -169,8 +169,6 @@ station.destroy().get()
 
 ```java
 memphisConnection.attachSchema("<schema-name>", "<station-name>").get();
-
-
 ```
 
 ### Detaching a Schema from Station
@@ -196,37 +194,30 @@ of whether there are messages in flight for the client.
 ### Creating a Producer
 
 ```java
-MemphisProdcuer producer = memphisConnection.createProducer("<station-name>", "<producer-name>");
+ProducerOptions pOpts = new ProducerOptions.Builder()
+        .stationName("<station-name>")
+        .producerName("<producer-name>")
+        .build();
+MemphisProducer producer = memphisConnection.createProducer(pOpts);
 ```
 
-### Producing a message
-Without creating a producer.
-In cases where extra performance is needed the recommended way is to create a producer first
-and produce messages by using the produce function of it
+### Producing a message and blocking until acknowledgment
 ```java
-memphisConnection.produce(
-    "<station-name>", // station_name
-    "<producer-name>", // producer_name
-    message, // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-    false, // generate_random_suffix - defaults to false
-    15, // ack_wait_sec
-    headers, // headers - default to {}
-    false, // async_produce - defaults to false
-    "123" // msg_id
-).get();
+producer.produce(byte[] message);
 ```
 
-with creating a producer
+### Producing a message without blocking
+This method will add the message to an internal queue and return.
+If the queue is full, this method will block until the queue has been
+drained some.
 ```java
-producer.produce(
-  message // bytearray / protobuf class (schema validated station - protobuf) or bytearray/dict (schema validated station - json schema) or string/bytearray/graphql.language.ast.DocumentNode (schema validated station - graphql schema)
-  );
+producer.produceNonblocking(byte[] message);
 ```
 
-### Destroying a Producer
+### Stopping a Producer
 
 ```java
-producer.destroy();
+producer.stop();
 ```
 
 ### Creating an Asynchronous Consumer
@@ -238,11 +229,12 @@ ConsumerOptions opts = new ConsumerOptions.Builder()
         .stationName("example-station")
         .build();
 
-MemphisAsynchronousConsumer consumer = memphisConnection.createAsyncConsumer(
+MemphisAsyncConsumer consumer = memphisConnection.createAsyncConsumer(
         opts,
         messages -> {
             for(MemphisMessage msg : messages) {
                 System.out.println(new String(msg.getData(), StandardCharsets.UTF_8));
+                msg.ack();
             }
         });
         
@@ -252,7 +244,13 @@ MemphisAsynchronousConsumer consumer = memphisConnection.createAsyncConsumer(
 ### Processing messages
 
 ```java
-consumer.run();
+consumer.start();
+```
+
+### Stopping the consumer
+
+```java
+consumer.stop();
 ```
 
 ### Creating a Synchronous Consumer
@@ -275,12 +273,6 @@ var messages = consumer.fetch();
 for(var msg : messages) {
     msg.ack();
 }
-```
-
-### Destroying a Consumer
-
-```java
-consumer.destroy();
 ```
 
 ### Check connection status
