@@ -201,15 +201,23 @@ ProducerOptions pOpts = new ProducerOptions.Builder()
 MemphisProducer producer = memphisConnection.createProducer(pOpts);
 ```
 
-### Producing a message
+### Producing a message and blocking until acknowledgment
 ```java
 producer.produce(byte[] message);
 ```
 
-### Destroying a Producer
+### Producing a message without blocking
+This method will add the message to an internal queue and return.
+If the queue is full, this method will block until the queue has been
+drained some.
+```java
+producer.produceNonblocking(byte[] message);
+```
+
+### Stopping a Producer
 
 ```java
-producer.destroy();
+producer.stop();
 ```
 
 ### Creating an Asynchronous Consumer
