@@ -236,7 +236,13 @@ MemphisAsyncConsumer consumer = memphisConnection.createAsyncConsumer(
 ### Processing messages
 
 ```java
-consumer.run();
+consumer.start();
+```
+
+### Stopping the consumer
+
+```java
+consumer.stop();
 ```
 
 ### Creating a Synchronous Consumer
@@ -259,12 +265,6 @@ var messages = consumer.fetch();
 for(var msg : messages) {
     msg.ack();
 }
-```
-
-### Destroying a Consumer
-
-```java
-consumer.destroy();
 ```
 
 ### Check connection status

@@ -94,7 +94,6 @@ public class MemphisConnection {
         return brokerConnection.getStatus() == Connection.Status.CONNECTED;
     }
 
-
     /**
      * Creates a producer for sending messages to a station.
      * @param producerOptions Configuration parameters for creating producer
